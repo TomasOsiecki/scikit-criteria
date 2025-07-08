@@ -31,66 +31,78 @@ with hidden():
 
 # si hay una columna con todos 1, se hace:
 # decision_matrix = np.delete(decision_matrix, ...)
+# decision_matrix = np.delete(decision_matrix, column_index, axis=1)
+# weights = np.delete(weights, column_index)
+# objectives = np.delete(objectives, column_index)
 # weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
+# objectives = np.array([-1, 1, -1, -1, -1])
 
-def calculate_real_evaluation(matrix, a, b):
-    """
-    (x_ij - a) / (b - a)
-    in the maximization case, a is the minimum value of the column, b is the maximum value of the column
-    in the minimization case, b is the maximum value of the column, a is the minimum value of the column
-    """
-    # TODO: intentar con for's
-    pass
 
-def mairca(matrix, objectives, weights):
+def mairca(matrix, objectives, weights, P_ai):
     """ 
     Execute MAIRCA without any validation.
     MAIRCA (MultiAtributive Ideal-Real Comparative Analysis)
     """
 
-    # Step 1
-    # Define decision matrix X
-    # X = matrix
-
     # Step 2
     # Calculate  P_ai
-    # m = len(X)
-    # P_ai = 1 / m
+    if not P_ai:
+        m = len(matrix)  
+        P_ai = 1 / m
 
     # Step 3
     # Define the theoretical ranking matrix (Tp)
-    # T_p = np.tile(weights * P_ai, (m, 1))
+    T_p = np.tile(weights * P_ai, (m, 1))
 
     # Step 4
     # Define the real rating matrix (Tr)
-    # x_i_min = decision_matrix.min(axis=0)
-    # x_i_max = decision_matrix.max(axis=0)
-    # mask = objectives == 1
-    # real_value = calculate_real_evaluation(X)
-    # T_r = T_p * real_value
-
+    mask = objectives == Objective.MAX.value  # 1
+    T_r = np.where(mask, 
+                   T_p * ((matrix-matrix.min(axis=0))/(matrix.max(axis=0)-matrix.min(axis=0))), 
+                   T_p * ((matrix-matrix.max(axis=0))/(matrix.min(axis=0)-matrix.max(axis=0)))
+                   )
+    
     # Step 5
     # Calculate Total Gap Matrix
+    G = T_p - T_r
 
     # Step 6
     # Calculate the final values of criteria functions (Qi) by alternatives
+    Q_i = G.sum(axis=1)
 
-
-    pass
+    ranking = rank.rank_values(Q_i, reverse=False)  # or reverse=True depending on your method
+    return ranking, Q_i
 
 class MAIRCA(SKCDecisionMakerABC):
     """
     MAIRCA (MultiAtributive Ideal-Real Comparative Analysis)
-
-    
-    Parameters
-    ----------
-    matrix : ndarray
-        Decision matrix where each row is an alternative and each column is a criterion.
-    objectives : ndarray
-        Array indicating if each criterion is to be maximized (1) or minimized (-1).
-    weights : ndarray
-        Array of weights for each criterion.
-
     """
-    pass
+    _skcriteria_parameters = []
+
+    @doc_inherit(SKCDecisionMakerABC._evaluate_data)
+    def _evaluate_data(self, matrix, objectives, weights, P_ai=None, **kwargs):
+        if np.any(matrix <= 0):
+            raise ValueError("MAIRCA can't operate with values <= 0")
+        if not P_ai:
+            raise Warning(
+                "Preferences for the choice of alternatives not found."
+                "Using default value."
+            )
+        rank, q_i = mairca(
+            matrix,
+            objectives,
+            weights,
+            P_ai,
+        )
+        return rank, {
+            "values": q_i,
+        }
+
+    @doc_inherit(SKCDecisionMakerABC._make_result)
+    def _make_result(self, alternatives, values, extra):
+        return RankResult(
+            "MAIRCA",
+            alternatives=alternatives,
+            values=values,
+            extra=extra,
+        )
