@@ -23,18 +23,36 @@ def marcos(matrix, objectives, weights):
     ideal = np.where(mask, matrix.max(axis=0), matrix.min(axis=0))
     anti_ideal = np.where(mask, matrix.min(axis=0), matrix.max(axis=0))
 
+    # Step 1: Add ideal and anti-ideal to the matrix
     extended_data = np.vstack([anti_ideal, matrix, ideal])
+
+    # Step 2: Normalize with respect to the ideal
+    # REVISAR
     normalized = extended_data / ideal
+
+    # Step 3: Weight the normalized values
     weighted = normalized * weights
+
+    # Step 4: Sum the weighted values (Si)
     S = weighted.sum(axis=1)
-    Si = S[1:-1]
-    S_ai = S[0]
-    S_i = S[-1]
+    Si = S[1:-1]  # values for actual alternatives
+    S_aideal = S[0]  # value for anti-ideal
+    S_ideal = S[-1]  # value for ideal
 
-    Ki = Si / S_ai
-    f_Ki = Si / S_i
+    # Step 5: Compute utility functions
+    K_minus = Si / S_aideal  # Relation to anti-ideal
+    K_plus = Si / S_ideal  # Relation to ideal
 
-    return f_Ki, Ki, ideal, anti_ideal
+    # Step 6: Final utility function
+    f_K_plus = K_minus / (K_plus + K_minus)
+    f_K_minus = K_plus / (K_plus + K_minus)
+    f_K = (
+        (K_plus + K_minus)
+        / ((1 - f_K_plus) * (1 - f_K_minus))
+        * (1 / (1 + f_K_plus / f_K_minus))
+    )
+
+    return Si, K_minus, K_plus, f_K
 
 
 class MARCOS(SKCDecisionMakerABC):
@@ -77,13 +95,13 @@ class MARCOS(SKCDecisionMakerABC):
             raise ValueError(
                 "Number of weights must match number of criteria."
             )
-        f_Ki, Ki, ideal, anti_ideal = marcos(matrix, objectives, self.weights)
-        ranking = rank.rank_values(f_Ki, reverse=True)
+        Si, K_minus, K_plus, f_K = marcos(matrix, objectives, self.weights)
+        ranking = rank.rank_values(f_K, reverse=True)
         return ranking, {
-            "utility_scores": f_Ki,
-            "ki_scores": Ki,
-            "ideal": ideal,
-            "anti_ideal": anti_ideal,
+            "utility_scores": f_K,
+            "Si": Si,
+            "K_minus": K_minus,
+            "K_plus": K_plus,
         }
 
     @doc_inherit(SKCDecisionMakerABC._make_result)
