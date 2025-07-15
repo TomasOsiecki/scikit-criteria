@@ -83,11 +83,11 @@ class MAIRCA(SKCDecisionMakerABC):
     def _evaluate_data(self, matrix, objectives, weights, P_ai=None, **kwargs):
         if np.any(matrix <= 0):
             raise ValueError("MAIRCA can't operate with values <= 0")
-        if not P_ai:
-            raise Warning(
-                "Preferences for the choice of alternatives not found."
-                "Using default value."
-            )
+        #if not P_ai:
+        #    raise Warning(
+        #        "Preferences for the choice of alternatives not found."
+        #        "Using default value."
+        #    )
         rank, q_i = mairca(
             matrix,
             objectives,
