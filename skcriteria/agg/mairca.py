@@ -46,13 +46,13 @@ def mairca(matrix, objectives, weights, P_ai):
 
     # Step 2
     # Calculate  P_ai
-    if not P_ai:
-        m = len(matrix)  
-        P_ai = 1 / m
+    m = len(matrix)  
+    if P_ai is None:
+        P_ai = np.ones(m) / m
 
     # Step 3
     # Define the theoretical ranking matrix (Tp)
-    T_p = np.tile(weights * P_ai, (m, 1))
+    T_p = P_ai[:, np.newaxis] * weights[np.newaxis, :]
 
     # Step 4
     # Define the real rating matrix (Tr)
@@ -77,22 +77,29 @@ class MAIRCA(SKCDecisionMakerABC):
     """
     MAIRCA (MultiAtributive Ideal-Real Comparative Analysis)
     """
-    _skcriteria_parameters = []
+    _skcriteria_parameters = ["P_ai"]  # Declare P_ai as a valid parameter
+
+    def __init__(self, P_ai=None):
+        if P_ai is not None:
+            if not isinstance(P_ai, np.ndarray):
+                raise ValueError("P_ai must be numpy array.")
+            if np.any(P_ai < 0):
+                raise ValueError("P_ai must be non-negative.")
+            if not np.isclose(np.sum(P_ai), 1):
+                raise ValueError("Sum of P_ai must be 1.")
+        self._P_ai = P_ai
 
     @doc_inherit(SKCDecisionMakerABC._evaluate_data)
-    def _evaluate_data(self, matrix, objectives, weights, P_ai=None, **kwargs):
+    def _evaluate_data(self, matrix, objectives, weights, **kwargs):
         if np.any(matrix <= 0):
             raise ValueError("MAIRCA can't operate with values <= 0")
-        #if not P_ai:
-        #    raise Warning(
-        #        "Preferences for the choice of alternatives not found."
-        #        "Using default value."
-        #    )
+        if self._P_ai is not None and len(self._P_ai) != len(matrix):
+            raise ValueError("Length of P_ai must match number of alternatives")
         rank, q_i = mairca(
             matrix,
             objectives,
             weights,
-            P_ai,
+            self._P_ai,
         )
         return rank, {
             "values": q_i,
