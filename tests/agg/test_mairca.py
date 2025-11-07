@@ -187,17 +187,17 @@ def test_MAIRCA_invalid_objectives():
         ranker = MAIRCA()
         ranker.evaluate(dm)
 
-#def test_MAIRCA_zero_weights():
-#    matrix = np.array([[3.828, 5.000], [4.675, 5.000]])
-#    objectives = np.array([-1, 1])
-#    weights = np.array([0.0, 0.0])  # Sum = 0
-#
-#    dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
-#    ranker = MAIRCA()
-#
-#    with pytest.raises(ValueError, match="Weights must sum to a positive value"):
-#        ranker.evaluate(dm)
-#
+def test_MAIRCA_zero_weights():
+    matrix = np.array([[3.828, 5.000], [4.675, 5.000]])
+    objectives = np.array([-1, 1])
+    weights = np.array([0.0, 0.0])  # Sum = 0
+
+    dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
+    ranker = MAIRCA()
+
+    with pytest.raises(ValueError, match="Weights must sum to a positive value"):
+        ranker.evaluate(dm)
+
 #def test_MAIRCA_empty_matrix():
 #    matrix = np.array([])  # Empty matrix
 #    objectives = np.array([])

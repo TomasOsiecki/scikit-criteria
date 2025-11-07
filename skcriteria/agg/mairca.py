@@ -108,6 +108,9 @@ class MAIRCA(SKCDecisionMakerABC):
             raise ValueError("MAIRCA can't operate with values <= 0")
         if self._P_ai is not None and len(self._P_ai) != len(matrix):
             raise ValueError("Length of P_ai must match number of alternatives")
+        if np.sum(weights) <= 0:
+            raise ValueError("Weights must sum to a positive value")
+
         rank, q_i = mairca(
             matrix,
             objectives,
