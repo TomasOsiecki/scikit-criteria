@@ -57,10 +57,23 @@ def mairca(matrix, objectives, weights, P_ai):
     # Step 4
     # Define the real rating matrix (Tr)
     mask = objectives == Objective.MAX.value  # 1
-    T_r = np.where(mask, 
-                   T_p * ((matrix-matrix.min(axis=0))/(matrix.max(axis=0)-matrix.min(axis=0))), 
-                   T_p * ((matrix-matrix.max(axis=0))/(matrix.min(axis=0)-matrix.max(axis=0)))
-                   )
+    min_vals = matrix.min(axis=0)
+    max_vals = matrix.max(axis=0)
+    T_r = np.zeros_like(T_p)
+    
+    for j in range(matrix.shape[1]):
+        if min_vals[j] == max_vals[j]:  # All alternatives have same value for this criterion
+            # Use theoretical evaluation (no gap)
+            T_r[:, j] = T_p[:, j]
+        else:
+            if mask[j]:  # Benefit criterion
+                T_r[:, j] = T_p[:, j] * (
+                    (matrix[:, j] - min_vals[j]) / (max_vals[j] - min_vals[j])
+                )
+            else:  # Cost criterion
+                T_r[:, j] = T_p[:, j] * (
+                    (matrix[:, j] - max_vals[j]) / (min_vals[j] - max_vals[j])
+                )
     
     # Step 5
     # Calculate Total Gap Matrix
