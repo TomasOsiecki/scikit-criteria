@@ -198,14 +198,12 @@ def test_MAIRCA_zero_weights():
     with pytest.raises(ValueError, match="Weights must sum to a positive value"):
         ranker.evaluate(dm)
 
-#def test_MAIRCA_empty_matrix():
-#    matrix = np.array([])  # Empty matrix
-#    objectives = np.array([])
-#    weights = np.array([])
-#
-#    dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
-#    ranker = MAIRCA()
-#
-#    with pytest.raises(ValueError, match="Matrix cannot be empty"):
-#        ranker.evaluate(dm)
-#
+def test_MAIRCA_empty_matrix():
+    matrix = np.array([])  # Empty matrix
+    objectives = np.array([])
+    weights = np.array([])
+
+    with pytest.raises(ValueError, match="'matrix' must have 2 dimensions, found 1 instead"):
+        dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
+        ranker = MAIRCA()
+        ranker.evaluate(dm)
