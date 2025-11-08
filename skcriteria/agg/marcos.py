@@ -27,8 +27,12 @@ def marcos(matrix, objectives, weights):
     extended_data = np.vstack([anti_ideal, matrix, ideal])
 
     # Step 2: Normalize with respect to the ideal
-    # REVISAR
-    normalized = extended_data / ideal
+    normalized = np.zeros_like(extended_data, dtype=float)
+    for i in range(extended_data.shape[1]):
+        if objectives[i] == Objective.MAX.value:
+            normalized[:, i] = extended_data[:, i] / ideal[i]
+        else:
+            normalized[:, i] = ideal[i] / extended_data[:, i]
 
     # Step 3: Weight the normalized values
     weighted = normalized * weights
@@ -65,11 +69,9 @@ class MARCOS(SKCDecisionMakerABC):
 
     References
     ----------
-    Željko Stević, Dragan Pamučar, Adis Puška, Prasenjit Chatterjee.
-    "Sustainable supplier selection in healthcare industries using a new MCDM method:
-    Measurement Alternatives and Ranking according to COmpromise Solution (MARCOS)".
-    Computers & Industrial Engineering, Volume 140, 2020, 106231.
-    https://doi.org/10.1016/j.cie.2019.106231
+    Stević, Z., Pamučar, D., Puška, A., Chatterjee, P., Sustainable supplier selection in
+    healthcare industries using a new MCDM method: Measurement Alternatives and Ranking according to
+    COmpromise Solution (MARCOS), Computers & Industrial Engineering (2019)
 
     Parameters
     ----------
