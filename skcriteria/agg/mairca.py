@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
+# Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
+# Copyright (c) 2022, 2023, 2024 QuatroPe
+# All rights reserved.
+
+# =============================================================================
+# DOCS
+# =============================================================================
+
+"""MAIRCA (Multi Attributive Ideal Real Comparative Analysis) Method."""
+
+
+# =============================================================================
+# IMPORTS
+# =============================================================================
 
 from ..utils import hidden
 
@@ -13,77 +28,53 @@ with hidden():
 # MAIRCA
 # =============================================================================
 
-# decision_matrix = np.array(
-#     [
-#         [3.828,	5.000,	3.720,	2.723,	1.000,	4.255],
-#         [4.675,	5.000,	3.000,	3.452,	1.000,	2.587],
-#         [4.515,	4.836,	3.289,	3.491,	1.000,	4.069],
-#         [4.421,	5.000,	3.555,	2.839,	1.000,	4.397],
-#         [4.717,	5.000,	3.430,	4.401,	1.000,	1.000],
-#         [4.695,	5.000,	3.925,	3.847,	1.000,	1.000],
-#         [4.688,	5.000,	2.000,	4.99,	1.000,	1.000],
-#         [4.688,	5.000,	3.971,	4.001,	1.000,	1.000],
-#     ]
-# )
-
-# n columnas, m filas
-# caso de test: la suma de los p_ai's debe ser 1
-
-# si hay una columna con todos 1, se hace:
-# decision_matrix = np.delete(decision_matrix, ...)
-# decision_matrix = np.delete(decision_matrix, column_index, axis=1)
-# weights = np.delete(weights, column_index)
-# objectives = np.delete(objectives, column_index)
-# weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
-# objectives = np.array([-1, 1, -1, -1, -1])
-
-
 def mairca(matrix, objectives, weights, P_ai):
     """ 
     Execute MAIRCA without any validation.
-    MAIRCA (MultiAtributive Ideal-Real Comparative Analysis)
-    """
 
-    # Step 2
-    # Calculate  P_ai
-    m = len(matrix)  
+    MAIRCA was developed in 2014 by the Center for Logistics Research at the University of Defence in Belgrade.
+    The basic MAIRCA setup is to define the gap observed for each alternative.
+    This gap is calculated as the difference between the “theoretical rating matrix” and the “real rating matrix.”
+    The best alternative is the one with the lowest total gap value.
+
+    Parameters
+    ----------
+        P_ai : numpy array with len(P_ai) equal to alternatives total. 
+               Represents preferences for alternatives. 
+    """
+    # Don't have preference  
     if P_ai is None:
+        m = len(matrix)
         P_ai = np.ones(m) / m
 
-    # Step 3
-    # Define the theoretical ranking matrix (Tp)
     T_p = P_ai[:, np.newaxis] * weights[np.newaxis, :]
 
-    # Step 4
-    # Define the real rating matrix (Tr)
-    mask = objectives == Objective.MAX.value  # 1
+    mask = objectives == Objective.MAX.value
     min_vals = matrix.min(axis=0)
     max_vals = matrix.max(axis=0)
-    T_r = np.zeros_like(T_p)
+    T_r = np.zeros_like(T_p) # matrix?
     
     for j in range(matrix.shape[1]):
         if min_vals[j] == max_vals[j]:  # All alternatives have same value for this criterion
             # Use theoretical evaluation (no gap)
             T_r[:, j] = T_p[:, j]
         else:
-            if mask[j]:  # Benefit criterion
+            if mask[j]: # Benefit criterion
                 T_r[:, j] = T_p[:, j] * (
                     (matrix[:, j] - min_vals[j]) / (max_vals[j] - min_vals[j])
                 )
-            else:  # Cost criterion
+            else: # Cost criterion
                 T_r[:, j] = T_p[:, j] * (
                     (matrix[:, j] - max_vals[j]) / (min_vals[j] - max_vals[j])
                 )
-    
-    # Step 5
-    # Calculate Total Gap Matrix
+
     G = T_p - T_r
 
-    # Step 6
-    # Calculate the final values of criteria functions (Qi) by alternatives
     Q_i = G.sum(axis=1)
+    print("Q_i:")
+    print(Q_i)
 
-    ranking = rank.rank_values(Q_i, reverse=False)  # or reverse=True depending on your method
+    ranking = rank.rank_values(Q_i, reverse=False)
     return ranking, Q_i
 
 class MAIRCA(SKCDecisionMakerABC):
