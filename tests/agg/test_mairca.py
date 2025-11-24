@@ -25,7 +25,13 @@ from skcriteria.agg.mairca import MAIRCA
 # TEST CLASSES
 # =============================================================================
 
-def test_MAIRCA_basic():
+def test_MAIRCA_with_equal_P_ai_ljubomir2016combination():
+    """
+    Data From: 
+        Ljubomir Gigović, Dragan Pamučar, Zoran Bajić and Milić Milićević.
+        The Combination of Expert Judgment and GIS-MAIRCA Analysis for the Selection of Sites for Ammunition Depots.
+        Sustainability 2016, https://www.mdpi.com/2071-1050/8/4/372
+    """
     matrix = np.array(
         [
             [3.828, 5.000, 3.720, 2.723, 4.255],
@@ -40,6 +46,8 @@ def test_MAIRCA_basic():
     )
     objectives = np.array([-1, 1, -1, -1, -1])
     weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
+    
+    P_ai = np.array([0.125] * 8)
     Q_expected = np.array([0.0427, 0.0548, 0.0919, 0.0592, 0.0631, 0.0637, 0.0483, 0.0658])
     ranking_expected = np.array([1, 3, 8, 4, 5, 6, 2, 7])
     alternatives_expected = [f"A{i}" for i in range(len(matrix))]
@@ -59,14 +67,15 @@ def test_MAIRCA_basic():
         weights=weights,
     )
 
-    mairca = MAIRCA()
+    mairca = MAIRCA(P_ai=P_ai)
     result = mairca.evaluate(dm)
+    
 
     assert result.values_equals(expected)
     assert result.method == expected.method
     assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
 
-def test_MAIRCA_with_equal_P_ai_00():
+def test_MAIRCA_without_P_ai_ljubomir2016combination():
     """
     Data From: 
         Ljubomir Gigović, Dragan Pamučar, Zoran Bajić and Milić Milićević.
@@ -115,12 +124,62 @@ def test_MAIRCA_with_equal_P_ai_00():
     assert result.method == expected.method
     assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
 
-def test_MAIRCA_with_equal_P_ai_01():
+def test_MAIRCA_with_custom_P_ai_ljubomir2016combination():
+    """
+    Data From: 
+        Ljubomir Gigović, Dragan Pamučar, Zoran Bajić and Milić Milićević.
+        The Combination of Expert Judgment and GIS-MAIRCA Analysis for the Selection of Sites for Ammunition Depots.
+        Sustainability 2016, https://www.mdpi.com/2071-1050/8/4/372
+    """
+    matrix = np.array(
+        [
+            [3.828, 5.000, 3.720, 2.723, 4.255],
+            [4.675, 5.000, 3.000, 3.452, 2.587],
+            [4.515, 4.836, 3.289, 3.491, 4.069],
+            [4.421, 5.000, 3.555, 2.839, 4.397],
+            [4.717, 5.000, 3.430, 4.401, 1.000],
+            [4.695, 5.000, 3.925, 3.847, 1.000],
+            [4.688, 5.000, 2.000, 4.99, 1.000],
+            [4.688, 5.000, 3.971, 4.001, 1.000],
+        ]
+    )
+    objectives = np.array([-1, 1, -1, -1, -1])
+    weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
+    P_ai = np.array([0.2, 0.15, 0.15, 0.1, 0.1, 0.1, 0.1, 0.1])
+
+
+
+    Q_expected = np.array([0.06839111, 0.06578403, 0.11035555, 0.04739504, 0.05050595, 0.05094007, 0.03862236, 0.05260108])
+    ranking_expected = np.array([7, 6, 8, 2, 3, 4, 1, 5])
+    alternatives_expected = [f"A{i}" for i in range(len(matrix))]
+    extra = {"values": Q_expected}
+
+    expected = RankResult(
+        "MAIRCA",
+        alternatives=alternatives_expected,
+        values=ranking_expected,
+        extra=extra,
+    )
+
+    dm = skcriteria.mkdm(
+        matrix=matrix,
+        objectives=objectives,
+        weights=weights,
+    )
+
+    mairca_dm = MAIRCA(P_ai=P_ai)
+    result = mairca_dm.evaluate(dm)
+
+    assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
+    assert result.values_equals(expected)
+    assert result.method == expected.method
+
+def test_MAIRCA_ngoctien2024application():
     """
     Data From: 
         Ngoc-Tien Tran.
         APPLICATION OF THE MULTI-CRITERIA ANALYSIS METHOD MAIRCA, SPOTIS, COMET FOR THE OPTIMISATION OF SUSTAINABLE ELECTRICITY TECHNOLOGY DEVELOPMENT.
-        School of Mechanical and Automotive Engineering, Hanoi University of Industry, Hanoi, Vietnam. https://journal.eu-jr.eu/engineering/article/view/3133    
+        School of Mechanical and Automotive Engineering, Hanoi University of Industry, Hanoi, Vietnam, 2024. https://journal.eu-jr.24eu/engineering/article/view/3133    
     """
     matrix = np.array(
         [
@@ -167,51 +226,6 @@ def test_MAIRCA_with_equal_P_ai_01():
     assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
 
 
-def test_MAIRCA_with_custom_P_ai():
-    import numpy as np
-    from skcriteria.agg.mairca import mairca
-
-    matrix = np.array(
-        [
-            [3.828, 5.000, 3.720, 2.723, 4.255],
-            [4.675, 5.000, 3.000, 3.452, 2.587],
-            [4.515, 4.836, 3.289, 3.491, 4.069],
-            [4.421, 5.000, 3.555, 2.839, 4.397],
-            [4.717, 5.000, 3.430, 4.401, 1.000],
-            [4.695, 5.000, 3.925, 3.847, 1.000],
-            [4.688, 5.000, 2.000, 4.99, 1.000],
-            [4.688, 5.000, 3.971, 4.001, 1.000],
-        ]
-    )
-    objectives = np.array([-1, 1, -1, -1, -1])
-    weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
-    P_ai = np.array([0.2, 0.15, 0.15, 0.1, 0.1, 0.1, 0.1, 0.1])
-
-    # Calculate expected values using the actual MAIRCA function
-    ranking_expected, Q_expected = mairca(matrix, objectives, weights, P_ai)
-    alternatives_expected = [f"A{i}" for i in range(len(matrix))]
-    extra = {"values": Q_expected}
-
-    expected = RankResult(
-        "MAIRCA",
-        alternatives=alternatives_expected,
-        values=ranking_expected,
-        extra=extra,
-    )
-
-    dm = skcriteria.mkdm(
-        matrix=matrix,
-        objectives=objectives,
-        weights=weights,
-    )
-
-    mairca_dm = MAIRCA(P_ai=P_ai)
-    result = mairca_dm.evaluate(dm)
-
-    assert result.values_equals(expected)
-    assert result.method == expected.method
-    assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
-
 
 def test_MAIRCA_invalid_P_ai_sum():
     P_ai = np.array([0.6, 0.5])
@@ -245,7 +259,7 @@ def test_MAIRCA_zero_P_ai():
     matrix = np.array([[3.828, 5.000], [4.675, 5.000]])
     objectives = np.array([-1, 1])
     weights = np.array([0.5, 0.5])
-    P_ai = np.array([0.0, 1.0])  # One alternative has zero preference
+    P_ai = np.array([0.0, 1.0])
 
     mairca = MAIRCA(P_ai=P_ai)
     dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)

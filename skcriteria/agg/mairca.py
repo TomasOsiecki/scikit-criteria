@@ -31,6 +31,41 @@ with hidden():
 def mairca(matrix, objectives, weights, P_ai):
     """ 
     Execute MAIRCA without any validation.
+    """
+    if P_ai is None:
+        m = len(matrix)
+        P_ai = np.ones(m) / m
+
+    T_p = P_ai[:, np.newaxis] * weights[np.newaxis, :]
+
+    mask = objectives == Objective.MAX.value
+    min_vals = matrix.min(axis=0)
+    max_vals = matrix.max(axis=0)
+    T_r = np.zeros_like(T_p)
+    
+    for j in range(matrix.shape[1]):
+        if min_vals[j] == max_vals[j]:  
+            T_r[:, j] = T_p[:, j]
+        else:
+            if mask[j]:
+                T_r[:, j] = T_p[:, j] * (
+                    (matrix[:, j] - min_vals[j]) / (max_vals[j] - min_vals[j])
+                )
+            else:
+                T_r[:, j] = T_p[:, j] * (
+                    (matrix[:, j] - max_vals[j]) / (min_vals[j] - max_vals[j])
+                )
+
+    G = T_p - T_r
+
+    Q_i = G.sum(axis=1)
+
+    ranking = rank.rank_values(Q_i, reverse=False)
+    return ranking, Q_i
+
+class MAIRCA(SKCDecisionMakerABC):
+    """
+    MAIRCA (MultiAtributive Ideal-Real Comparative Analysis)
 
     MAIRCA was developed in 2014 by the Center for Logistics Research at the University of Defence in Belgrade.
     The basic MAIRCA setup is to define the gap observed for each alternative.
@@ -41,47 +76,14 @@ def mairca(matrix, objectives, weights, P_ai):
     ----------
         P_ai : numpy array with len(P_ai) equal to alternatives total. 
                Represents preferences for alternatives. 
-    """
-    # Don't have preference  
-    if P_ai is None:
-        m = len(matrix)
-        P_ai = np.ones(m) / m
-
-    T_p = P_ai[:, np.newaxis] * weights[np.newaxis, :]
-
-    mask = objectives == Objective.MAX.value
-    min_vals = matrix.min(axis=0)
-    max_vals = matrix.max(axis=0)
-    T_r = np.zeros_like(T_p) # matrix?
     
-    for j in range(matrix.shape[1]):
-        if min_vals[j] == max_vals[j]:  # All alternatives have same value for this criterion
-            # Use theoretical evaluation (no gap)
-            T_r[:, j] = T_p[:, j]
-        else:
-            if mask[j]: # Benefit criterion
-                T_r[:, j] = T_p[:, j] * (
-                    (matrix[:, j] - min_vals[j]) / (max_vals[j] - min_vals[j])
-                )
-            else: # Cost criterion
-                T_r[:, j] = T_p[:, j] * (
-                    (matrix[:, j] - max_vals[j]) / (min_vals[j] - max_vals[j])
-                )
-
-    G = T_p - T_r
-
-    Q_i = G.sum(axis=1)
-    print("Q_i:")
-    print(Q_i)
-
-    ranking = rank.rank_values(Q_i, reverse=False)
-    return ranking, Q_i
-
-class MAIRCA(SKCDecisionMakerABC):
+    References
+    ----------
+    :cite:p:`ljubomir2016combination`
+    :cite:p:`aksoy2021analysis`
+    :cite:p:`dragan2018hybrid`
     """
-    MAIRCA (MultiAtributive Ideal-Real Comparative Analysis)
-    """
-    _skcriteria_parameters = ["P_ai"]  # Declare P_ai as a valid parameter
+    _skcriteria_parameters = ["P_ai"]
 
     def __init__(self, P_ai=None):
         if P_ai is not None:
