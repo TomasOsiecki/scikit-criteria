@@ -67,8 +67,8 @@ def test_MAIRCA_with_equal_P_ai_ljubomir2016combination():
         weights=weights,
     )
 
-    mairca = MAIRCA(P_ai=P_ai)
-    result = mairca.evaluate(dm)
+    mairca = MAIRCA()
+    result = mairca.evaluate(dm, P_ai=P_ai)
     
 
     assert result.values_equals(expected)
@@ -167,8 +167,8 @@ def test_MAIRCA_with_custom_P_ai_ljubomir2016combination():
         weights=weights,
     )
 
-    mairca_dm = MAIRCA(P_ai=P_ai)
-    result = mairca_dm.evaluate(dm)
+    mairca_dm = MAIRCA()
+    result = mairca_dm.evaluate(dm, P_ai=P_ai)
 
     assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
     assert result.values_equals(expected)
@@ -228,16 +228,58 @@ def test_MAIRCA_ngoctien2024application():
 
 
 def test_MAIRCA_invalid_P_ai_sum():
-    P_ai = np.array([0.6, 0.5])
+    matrix = np.array(
+        [
+            [3.828, 5.000, 3.720, 2.723, 4.255],
+            [4.675, 5.000, 3.000, 3.452, 2.587],
+            [4.515, 4.836, 3.289, 3.491, 4.069],
+            [4.421, 5.000, 3.555, 2.839, 4.397],
+            [4.717, 5.000, 3.430, 4.401, 1.000],
+            [4.695, 5.000, 3.925, 3.847, 1.000],
+            [4.688, 5.000, 2.000, 4.99, 1.000],
+            [4.688, 5.000, 3.971, 4.001, 1.000],
+        ]
+    )
+    objectives = np.array([-1, 1, -1, -1, -1])
+    weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
+    P_ai = np.array([0.2] * 8)
     
+    dm = skcriteria.mkdm(
+        matrix=matrix,
+        objectives=objectives,
+        weights=weights,
+    )
+
     with pytest.raises(ValueError, match="Sum of P_ai must be 1"):
-        MAIRCA(P_ai=P_ai)
+        mairca = MAIRCA()
+        mairca.evaluate(dm, P_ai=P_ai)
 
 def test_MAIRCA_negative_P_ai():
-    P_ai = np.array([0.7, -0.3])
+    matrix = np.array(
+        [
+            [3.828, 5.000, 3.720, 2.723, 4.255],
+            [4.675, 5.000, 3.000, 3.452, 2.587],
+            [4.515, 4.836, 3.289, 3.491, 4.069],
+            [4.421, 5.000, 3.555, 2.839, 4.397],
+            [4.717, 5.000, 3.430, 4.401, 1.000],
+            [4.695, 5.000, 3.925, 3.847, 1.000],
+            [4.688, 5.000, 2.000, 4.99, 1.000],
+            [4.688, 5.000, 3.971, 4.001, 1.000],
+        ]
+    )
+    objectives = np.array([-1, 1, -1, -1, -1])
+    weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
+    P_ai = np.array([0.2] * 7 + [-0.4])
+    
+    dm = skcriteria.mkdm(
+        matrix=matrix,
+        objectives=objectives,
+        weights=weights,
+    )
 
     with pytest.raises(ValueError, match="P_ai must be non-negative"):
-        MAIRCA(P_ai=P_ai)
+        mairca = MAIRCA()
+        mairca.evaluate(dm, P_ai=P_ai)
 
 def test_MAIRCA_mismatched_P_ai_length():
     matrix = np.array([[3.828, 5.000], [4.675, 5.000]])
@@ -251,8 +293,8 @@ def test_MAIRCA_mismatched_P_ai_length():
             objectives=objectives,
             weights=weights,
         )
-        mairca_dm = MAIRCA(P_ai=P_ai)
-        mairca_dm.evaluate(dm)
+        mairca_dm = MAIRCA()
+        mairca_dm.evaluate(dm, P_ai=P_ai)
 
 
 def test_MAIRCA_zero_P_ai():
@@ -261,7 +303,7 @@ def test_MAIRCA_zero_P_ai():
     weights = np.array([0.5, 0.5])
     P_ai = np.array([0.0, 1.0])
 
-    mairca = MAIRCA(P_ai=P_ai)
+    mairca = MAIRCA()
     dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
-    result = mairca.evaluate(dm)
+    result = mairca.evaluate(dm, P_ai=P_ai)
     assert len(result.e_["values"]) == 2

@@ -32,9 +32,6 @@ def mairca(matrix, objectives, weights, P_ai):
     """ 
     Execute MAIRCA without any validation.
     """
-    if P_ai is None:
-        m = len(matrix)
-        P_ai = np.ones(m) / m
 
     T_p = P_ai[:, np.newaxis] * weights[np.newaxis, :]
 
@@ -67,9 +64,11 @@ class MAIRCA(SKCDecisionMakerABC):
     """
     MAIRCA (MultiAtributive Ideal-Real Comparative Analysis)
 
-    MAIRCA was developed in 2014 by the Center for Logistics Research at the University of Defence in Belgrade.
+    MAIRCA was developed in 2014 by the Center for Logistics Research at the
+    University of Defence in Belgrade.
     The basic MAIRCA setup is to define the gap observed for each alternative.
-    This gap is calculated as the difference between the “theoretical rating matrix” and the “real rating matrix.”
+    This gap is calculated as the difference between the “theoretical rating 
+    matrix” and the “real rating matrix.”
     The best alternative is the one with the lowest total gap value.
 
     Parameters
@@ -83,36 +82,34 @@ class MAIRCA(SKCDecisionMakerABC):
     :cite:p:`aksoy2021analysis`
     :cite:p:`dragan2018hybrid`
     """
-    _skcriteria_parameters = ["P_ai"]
-
-    def __init__(self, P_ai=None):
-        if P_ai is not None:
-            if not isinstance(P_ai, np.ndarray):
-                raise ValueError("P_ai must be numpy array.")
-            if np.any(P_ai < 0):
-                raise ValueError("P_ai must be non-negative.")
-            if not np.isclose(np.sum(P_ai), 1):
-                raise ValueError("Sum of P_ai must be 1.")
-        self._P_ai = P_ai
+    _skcriteria_parameters = []    
 
     @doc_inherit(SKCDecisionMakerABC._evaluate_data)
-    def _evaluate_data(self, matrix, objectives, weights, **kwargs):
+    def _evaluate_data(self, matrix, objectives, weights, P_ai=None, **kwargs):
         if np.any(matrix <= 0):
             raise ValueError("MAIRCA can't operate with values <= 0")
-        if self._P_ai is not None and len(self._P_ai) != len(matrix):
+        if P_ai is not None and len(P_ai) != len(matrix):
             raise ValueError("Length of P_ai must match number of alternatives")
-        if np.sum(weights) <= 0:
-            raise ValueError("Weights must sum to a positive value")
-
+        if P_ai is None:
+            m = len(matrix)
+            P_ai = np.ones(m) / m
+        if not np.isclose(np.sum(P_ai), 1):
+                raise ValueError("Sum of P_ai must be 1.")
+        if np.any(P_ai < 0):
+                raise ValueError("P_ai must be non-negative.")
+            
         rank, q_i = mairca(
             matrix,
             objectives,
             weights,
-            self._P_ai,
+            P_ai,
         )
         return rank, {
             "values": q_i,
         }
+    
+    def evaluate(self, dm, *, P_ai=None):
+        return self._evaluate_dm(dm, P_ai=P_ai)
 
     @doc_inherit(SKCDecisionMakerABC._make_result)
     def _make_result(self, alternatives, values, extra):
