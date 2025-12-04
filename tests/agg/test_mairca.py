@@ -16,7 +16,7 @@
 # =============================================================================
 
 import numpy as np
-import skcriteria
+from skcriteria import testing, mkdm
 import pytest
 from skcriteria.agg import RankResult
 from skcriteria.agg.mairca import MAIRCA
@@ -41,7 +41,7 @@ def ljubomir2016combination_matrix():
     )
     objectives = np.array([min, max, min, min, min])
     weights = np.array([0.2016, 0.2304, 0.2232, 0.1912, 0.1536])
-    return skcriteria.mkdm(
+    return mkdm(
         matrix=matrix,
         objectives=objectives,
         weights=weights
@@ -65,7 +65,7 @@ def ngoctien2024application_matrix():
     )
     objectives = np.array([min, min, min, min, min, min, max])
     weights = np.array([0.1, 0.117, 0.215, 0.107, 0.172, 0.126, 0.163])
-    return skcriteria.mkdm(
+    return mkdm(
         matrix=matrix,
         objectives=objectives,
         weights=weights
@@ -96,10 +96,7 @@ def test_MAIRCA_with_equal_P_ai_ljubomir2016combination(ljubomir2016combination_
     mairca = MAIRCA()
     result = mairca.evaluate(ljubomir2016combination_matrix, P_ai=P_ai)
     
-
-    assert result.values_equals(expected)
-    assert result.method == expected.method
-    assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
+    testing.assert_result_equals(result, expected, atol=1e-4)
 
 def test_MAIRCA_without_P_ai_ljubomir2016combination(ljubomir2016combination_matrix):
     """
@@ -124,10 +121,7 @@ def test_MAIRCA_without_P_ai_ljubomir2016combination(ljubomir2016combination_mat
     mairca = MAIRCA()
     result = mairca.evaluate(ljubomir2016combination_matrix)
     
-
-    assert result.values_equals(expected)
-    assert result.method == expected.method
-    assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
+    testing.assert_result_equals(result, expected, atol=1e-4)
 
 def test_MAIRCA_with_custom_P_ai_ljubomir2016combination(ljubomir2016combination_matrix):
     """
@@ -153,9 +147,8 @@ def test_MAIRCA_with_custom_P_ai_ljubomir2016combination(ljubomir2016combination
     mairca_dm = MAIRCA()
     result = mairca_dm.evaluate(ljubomir2016combination_matrix, P_ai=P_ai)
 
-    assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
-    assert result.values_equals(expected)
-    assert result.method == expected.method
+    testing.assert_result_equals(result, expected, atol=1e-4)
+
 
 def test_MAIRCA_ngoctien2024application(ngoctien2024application_matrix):
     """
@@ -180,9 +173,7 @@ def test_MAIRCA_ngoctien2024application(ngoctien2024application_matrix):
     mairca = MAIRCA()
     result = mairca.evaluate(ngoctien2024application_matrix)
 
-    assert result.values_equals(expected)
-    assert result.method == expected.method
-    assert np.allclose(result.e_["values"], Q_expected, atol=1e-4)
+    testing.assert_result_equals(result, expected, atol=1e-4)
 
 
 def test_MAIRCA_mismatched_P_ai_length(ljubomir2016combination_matrix):
