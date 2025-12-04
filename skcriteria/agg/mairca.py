@@ -88,11 +88,11 @@ class MAIRCA(SKCDecisionMakerABC):
     def _evaluate_data(self, matrix, objectives, weights, P_ai=None, **kwargs):
         if np.any(matrix <= 0):
             raise ValueError("MAIRCA can't operate with values <= 0")
-        if P_ai is not None and len(P_ai) != len(matrix):
-            raise ValueError("Length of P_ai must match number of alternatives")
         if P_ai is None:
             m = len(matrix)
             P_ai = np.ones(m) / m
+        if len(P_ai) != len(matrix):
+            raise ValueError("Length of P_ai must match number of alternatives")
         if not np.isclose(np.sum(P_ai), 1):
                 raise ValueError("Sum of P_ai must be 1.")
         if np.any(P_ai < 0):
