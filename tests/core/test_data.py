@@ -2,22 +2,21 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
 # DOCS
 # =============================================================================
 
-"""test for skcriteria.core.data
-
-"""
+"""test for skcriteria.core.data"""
 
 
 # =============================================================================
 # IMPORTS
 # =============================================================================
 
+import io
 import warnings
 
 import numpy as np
@@ -28,6 +27,7 @@ import pyquery
 
 import pytest
 
+import skcriteria as skc
 from skcriteria.core import data, dominance, plot, stats
 
 
@@ -285,6 +285,19 @@ def test_DecisionMatrix_dominance(decision_matrix):
 # =============================================================================
 
 
+def test_DecisionMatrix_constant_criteria():
+    dm = data.mkdm(
+        matrix=np.array([[1, 2], [1, 4]]),
+        objectives=[min, max],
+    )
+    ccriteria = dm.constant_criteria()
+
+    expected = pd.Series(
+        [True, False], index=["C0", "C1"], name="constant_criteria"
+    )
+    pd.testing.assert_series_equal(ccriteria, expected)
+
+
 def test_DecisionMatrix_copy(data_values):
     mtx, objectives, weights, alternatives, criteria = data_values(seed=42)
 
@@ -299,6 +312,26 @@ def test_DecisionMatrix_copy(data_values):
 
     assert dm is not copy
     assert dm.equals(copy)
+
+    with pytest.deprecated_call():
+        dm.copy(**dm.to_dict())
+
+
+def test_DecisionMatrix_replace(data_values):
+    mtx, objectives, weights, alternatives, criteria = data_values(seed=42)
+
+    dm = data.mkdm(
+        matrix=mtx,
+        objectives=objectives,
+        weights=weights,
+        alternatives=alternatives,
+        criteria=criteria,
+    )
+    copy = dm.replace(weights=dm.weights + 1)
+
+    assert dm is not copy
+    assert not dm.equals(copy)
+    pd.testing.assert_series_equal(dm.weights, copy.weights - 1)
 
 
 def test_DecisionMatrix_to_dataframe(data_values):
@@ -348,6 +381,32 @@ def test_DecisionMatrix_to_dict(data_values):
     assert np.all(cmp.values())
 
 
+def test_DecisionMatrix_to_latex(data_values):
+    mtx, objectives, weights, alternatives, criteria = data_values(seed=42)
+
+    dm = data.mkdm(
+        matrix=mtx,
+        objectives=objectives,
+        weights=weights,
+        alternatives=alternatives,
+        criteria=criteria,
+    )
+
+    latex = dm.to_latex()
+
+    # create the expected table
+    df = dm.to_dataframe()
+    df.columns = [rf"\textbf{{{col}}}" for col in df.columns]
+
+    expected = df.to_latex(bold_rows=True)
+
+    expected_lines = expected.splitlines()
+    expected_lines.insert(6, r"\midrule")
+    expected = "\n".join(expected_lines)
+
+    assert latex == expected
+
+
 def test_DecisionMatrix_describe(data_values):
     mtx, objectives, weights, alternatives, criteria = data_values(seed=42)
 
@@ -367,6 +426,52 @@ def test_DecisionMatrix_describe(data_values):
         result = dm.describe()
 
     assert result.equals(expected)
+
+
+# =============================================================================
+# IO
+# =============================================================================
+
+
+def test_DecisionMatrix_to_dmsy(data_values):
+    mtx, objectives, weights, alternatives, criteria = data_values(seed=42)
+
+    dm = data.mkdm(
+        matrix=mtx,
+        objectives=objectives,
+        weights=weights,
+        alternatives=alternatives,
+        criteria=criteria,
+    )
+
+    buff = io.StringIO()
+    dm.to_dmsy(buff)
+
+    buff.seek(0)
+    dm2 = skc.io.read_dmsy(buff)
+
+    assert dm is not dm2
+    skc.testing.assert_dmatrix_equals(dm, dm2)
+
+
+def test_DecisionMatrix_to_dmsy_filepath_or_buffer_None(data_values):
+    mtx, objectives, weights, alternatives, criteria = data_values(seed=42)
+
+    dm = data.mkdm(
+        matrix=mtx,
+        objectives=objectives,
+        weights=weights,
+        alternatives=alternatives,
+        criteria=criteria,
+    )
+
+    code = dm.to_dmsy()
+    buff = io.StringIO(code)
+
+    dm2 = skc.io.read_dmsy(buff)
+
+    assert dm is not dm2
+    skc.testing.assert_dmatrix_equals(dm, dm2)
 
 
 # =============================================================================

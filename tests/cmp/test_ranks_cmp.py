@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
 # DOCS
 # =============================================================================
 
-"""test for skcriteria.cmp.ranks_cmp
-
-"""
+"""test for skcriteria.cmp.ranks_cmp"""
 
 
 # =============================================================================
@@ -30,34 +28,36 @@ import seaborn as sns
 
 from skcriteria import agg
 from skcriteria.cmp import ranks_cmp
+from skcriteria.utils import Bunch
+
 
 # =============================================================================
 # TESTS
 # =============================================================================
 
 
-def test_RanksComparator_only_one_rank():
+def test_RanksComparator_extra_not_mapping():
     rank = agg.RankResult("test", ["a"], [1], {})
-    with pytest.raises(ValueError):
-        ranks_cmp.mkrank_cmp(rank)
+    with pytest.raises(TypeError):
+        ranks_cmp.RanksComparator([("a", rank), (1, rank)], extra=None)
 
 
 def test_RanksComparator_name_not_str():
     rank = agg.RankResult("test", ["a"], [1], {})
     with pytest.raises(ValueError):
-        ranks_cmp.RanksComparator([("a", rank), (1, rank)])
+        ranks_cmp.RanksComparator([("a", rank), (1, rank)], extra={})
 
 
 def test_RanksComparator_not_rank_result():
     rank = agg.RankResult("test", ["a"], [1], {})
     with pytest.raises(TypeError):
-        ranks_cmp.RanksComparator([("a", rank), ("b", None)])
+        ranks_cmp.RanksComparator([("a", rank), ("b", None)], extra={})
 
 
 def test_RanksComparator_duplicated_names():
     rank = agg.RankResult("test", ["a"], [1], {})
     with pytest.raises(ValueError):
-        ranks_cmp.RanksComparator([("a", rank), ("a", rank)])
+        ranks_cmp.RanksComparator([("a", rank), ("a", rank)], extra={})
 
 
 def test_RanksComparator_missing_alternatives():
@@ -72,6 +72,13 @@ def test_RanksComparator_repr():
     rank1 = agg.RankResult("test", ["a", "b"], [1, 1], {})
     rcmp = ranks_cmp.mkrank_cmp(rank0, rank1)
     assert repr(rcmp) == "<RanksComparator [ranks=['test_1', 'test_2']]>"
+
+
+def test_RanksComparator_extra_is_None():
+    rank0 = agg.RankResult("test", ["a", "b"], [1, 1], {})
+    rank1 = agg.RankResult("test", ["a", "b"], [1, 1], {})
+    rcmp = ranks_cmp.mkrank_cmp(rank0, rank1, extra=None)
+    assert rcmp.extra_ == {}
 
 
 @pytest.mark.parametrize("untied", [True, False])
@@ -93,6 +100,14 @@ def test_RanksComparator_to_dataframe(untied):
     pd.testing.assert_frame_equal(df, expected)
 
 
+def test_RanksComparator_extra():
+    rank0 = agg.RankResult("test", ["a", "b"], [1, 1], {})
+    rank1 = agg.RankResult("test", ["a", "b"], [1, 1], {})
+    rcmp = ranks_cmp.mkrank_cmp(rank0, rank1)
+    actual = rcmp.e_
+    assert actual == Bunch("extra", {})
+
+
 def test_RanksComparator_diff():
     rcmp = ranks_cmp.mkrank_cmp(
         agg.RankResult("test", ["a", "b"], [1, 1], {}),
@@ -111,13 +126,15 @@ def test_RanksComparator_diff_different_ranks_names():
         [
             ("r0", agg.RankResult("test", ["a", "b"], [1, 1], {})),
             ("r1", agg.RankResult("test", ["a", "b"], [1, 1], {})),
-        ]
+        ],
+        extra={},
     )
     rcmp_different_rank = ranks_cmp.RanksComparator(
         [
             ("r0", agg.RankResult("test", ["a", "b"], [1, 1], {})),
             ("r2", agg.RankResult("test", ["a", "b"], [1, 1], {})),
-        ]
+        ],
+        extra={},
     )
     diff = rcmp.diff(rcmp_different_rank)
     assert diff.has_differences
@@ -269,6 +286,24 @@ def test_RanksComparator_hash():
     rank1 = agg.RankResult("test", ["a", "b"], [1, 1], {})
     rcmp = ranks_cmp.mkrank_cmp(rank0, rank1)
     assert id(rcmp) == hash(rcmp)
+
+
+def test_RanksComparator_extra_get():
+    rank0 = agg.RankResult(
+        "test", ["a", "b"], [1, 1], {"alpha": 1, "bravo": 2}
+    )
+    rank1 = agg.RankResult(
+        "test", ["a", "b"], [1, 1], {"alpha": 1, "delta": 3}
+    )
+    rcmp = ranks_cmp.mkrank_cmp(rank0, rank1)
+
+    assert rcmp.extra_get("alpha") == {"test_1": 1, "test_2": 1}
+    assert rcmp.extra_get("bravo") == {"test_1": 2, "test_2": None}
+    assert rcmp.extra_get("delta", "foo") == {"test_1": "foo", "test_2": 3}
+    assert rcmp.extra_get("charly", "foo") == {
+        "test_1": "foo",
+        "test_2": "foo",
+    }
 
 
 def test_RanksComparator_plot():

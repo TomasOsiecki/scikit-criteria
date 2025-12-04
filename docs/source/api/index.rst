@@ -12,6 +12,7 @@
    :maxdepth: 2
 
    core/index
+   io/index
 
 
 .. toctree::
@@ -35,13 +36,20 @@
 .. toctree::
    :maxdepth: 2
 
+   ranksrev/index
+
+
+.. toctree::
+   :maxdepth: 2
+
    datasets/index
 
 
 .. toctree::
    :maxdepth: 2
 
-   pipeline
+   pipelines/index
+
 
 .. toctree::
    :maxdepth: 2
@@ -53,6 +61,11 @@
 
    testing
 
+.. toctree::
+   :maxdepth: 2
+
+   tiebreaker
+
 
 .. toctree::
    :maxdepth: 2
@@ -63,3 +76,4 @@
    :maxdepth: 2
 
    madm
+   pipeline

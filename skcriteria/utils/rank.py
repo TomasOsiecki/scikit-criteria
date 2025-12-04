@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
@@ -89,7 +89,7 @@ def dominance(array_a, array_b, reverse=False):
     reverse: bool (default=False)
         array_a[i] ≻ array_b[i] if array_a[i] > array_b[i] if reverse
         is False, otherwise array_a[i] ≻ array_b[i] if array_a[i] < array_b[i].
-        Also revese can be an array of boolean of the same shape as
+        Also reverse can be an array of boolean of the same shape as
         array_a and array_b to revert every item independently.
         In other words, reverse assume the data is a minimization problem.
 

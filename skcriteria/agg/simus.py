@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
@@ -348,14 +348,5 @@ class SIMUS(SKCDecisionMakerABC):
             Ranking.
 
         """
-        data = dm.to_dict()
         b = b if b is None else np.asarray(b)
-
-        rank, extra = self._evaluate_data(b=b, **data)
-
-        alternatives = data["alternatives"]
-        result = self._make_result(
-            alternatives=alternatives, values=rank, extra=extra
-        )
-
-        return result
+        return self._evaluate_dm(dm, b=b)
