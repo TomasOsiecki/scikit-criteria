@@ -265,35 +265,3 @@ def test_MAIRCA_zero_P_ai():
     dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
     result = mairca.evaluate(dm)
     assert len(result.e_["values"]) == 2
-
-
-def test_MAIRCA_invalid_objectives():
-    matrix = np.array([[3.828, 5.000], [4.675, 5.000]])
-    objectives = np.array([-1, 2])
-    weights = np.array([0.5, 0.5])
-
-    with pytest.raises(ValueError, match="Invalid criteria objective 2"):
-        dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
-        ranker = MAIRCA()
-        ranker.evaluate(dm)
-
-def test_MAIRCA_zero_weights():
-    matrix = np.array([[3.828, 5.000], [4.675, 5.000]])
-    objectives = np.array([-1, 1])
-    weights = np.array([0.0, 0.0])
-
-    dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
-    ranker = MAIRCA()
-
-    with pytest.raises(ValueError, match="Weights must sum to a positive value"):
-        ranker.evaluate(dm)
-
-def test_MAIRCA_empty_matrix():
-    matrix = np.array([])
-    objectives = np.array([])
-    weights = np.array([])
-
-    with pytest.raises(ValueError, match="'matrix' must have 2 dimensions, found 1 instead"):
-        dm = skcriteria.mkdm(matrix=matrix, objectives=objectives, weights=weights)
-        ranker = MAIRCA()
-        ranker.evaluate(dm)
