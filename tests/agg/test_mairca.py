@@ -9,7 +9,7 @@
 # DOCS
 # =============================================================================
 
-"""test for skcriteria.agg.mairca."""
+"""test for skcriteria.agg.mairca"""
 
 # =============================================================================
 # IMPORTS
@@ -27,6 +27,12 @@ from skcriteria.agg.mairca import MAIRCA
 
 @pytest.fixture
 def ljubomir2016combination_matrix():
+    """
+    Data From: 
+        Ljubomir Gigović, Dragan Pamučar, Zoran Bajić and Milić Milićević.
+        The Combination of Expert Judgment and GIS-MAIRCA Analysis for the Selection of Sites for Ammunition Depots.
+        Sustainability 2016, https://www.mdpi.com/2071-1050/8/4/372
+    """
     matrix = np.array(
         [
             [3.828, 5.000, 3.720, 2.723, 4.255],
@@ -49,6 +55,12 @@ def ljubomir2016combination_matrix():
 
 @pytest.fixture
 def ngoctien2024application_matrix():
+    """
+    Data From: 
+        Ngoc-Tien Tran.
+        APPLICATION OF THE MULTI-CRITERIA ANALYSIS METHOD MAIRCA, SPOTIS, COMET FOR THE OPTIMISATION OF SUSTAINABLE ELECTRICITY TECHNOLOGY DEVELOPMENT.
+        School of Mechanical and Automotive Engineering, Hanoi University of Industry, Hanoi, Vietnam, 2024. https://journal.eu-jr.24eu/engineering/article/view/3133    
+    """
     matrix = np.array(
         [
             [0.19, 0.013, 2.653, 0.015, 0.1452, 0.001, 0.9],
@@ -72,12 +84,6 @@ def ngoctien2024application_matrix():
     )
 
 def test_MAIRCA_with_equal_P_ai_ljubomir2016combination(ljubomir2016combination_matrix):
-    """
-    Data From: 
-        Ljubomir Gigović, Dragan Pamučar, Zoran Bajić and Milić Milićević.
-        The Combination of Expert Judgment and GIS-MAIRCA Analysis for the Selection of Sites for Ammunition Depots.
-        Sustainability 2016, https://www.mdpi.com/2071-1050/8/4/372
-    """
     P_ai = np.array([0.125] * 8)
 
     Q_expected = np.array([0.0427, 0.0548, 0.0919, 0.0592, 0.0631, 0.0637, 0.0483, 0.0658])
@@ -99,12 +105,6 @@ def test_MAIRCA_with_equal_P_ai_ljubomir2016combination(ljubomir2016combination_
     testing.assert_result_equals(result, expected, atol=1e-4)
 
 def test_MAIRCA_without_P_ai_ljubomir2016combination(ljubomir2016combination_matrix):
-    """
-    Data From: 
-        Ljubomir Gigović, Dragan Pamučar, Zoran Bajić and Milić Milićević.
-        The Combination of Expert Judgment and GIS-MAIRCA Analysis for the Selection of Sites for Ammunition Depots.
-        Sustainability 2016, https://www.mdpi.com/2071-1050/8/4/372
-    """
     Q_expected = np.array([0.0427, 0.0548, 0.0919, 0.0592, 0.0631, 0.0637, 0.0483, 0.0658])
     ranking_expected = np.array([1, 3, 8, 4, 5, 6, 2, 7])
     alternatives_expected = [f"A{i}" for i in range(len(ljubomir2016combination_matrix.matrix))]
@@ -124,12 +124,6 @@ def test_MAIRCA_without_P_ai_ljubomir2016combination(ljubomir2016combination_mat
     testing.assert_result_equals(result, expected, atol=1e-4)
 
 def test_MAIRCA_with_custom_P_ai_ljubomir2016combination(ljubomir2016combination_matrix):
-    """
-    Data From: 
-        Ljubomir Gigović, Dragan Pamučar, Zoran Bajić and Milić Milićević.
-        The Combination of Expert Judgment and GIS-MAIRCA Analysis for the Selection of Sites for Ammunition Depots.
-        Sustainability 2016, https://www.mdpi.com/2071-1050/8/4/372
-    """
     P_ai = np.array([0.2, 0.15, 0.15, 0.1, 0.1, 0.1, 0.1, 0.1])
 
     Q_expected = np.array([0.06839111, 0.06578403, 0.11035555, 0.04739504, 0.05050595, 0.05094007, 0.03862236, 0.05260108])
@@ -151,12 +145,7 @@ def test_MAIRCA_with_custom_P_ai_ljubomir2016combination(ljubomir2016combination
 
 
 def test_MAIRCA_ngoctien2024application(ngoctien2024application_matrix):
-    """
-    Data From: 
-        Ngoc-Tien Tran.
-        APPLICATION OF THE MULTI-CRITERIA ANALYSIS METHOD MAIRCA, SPOTIS, COMET FOR THE OPTIMISATION OF SUSTAINABLE ELECTRICITY TECHNOLOGY DEVELOPMENT.
-        School of Mechanical and Automotive Engineering, Hanoi University of Industry, Hanoi, Vietnam, 2024. https://journal.eu-jr.24eu/engineering/article/view/3133    
-    """
+    
     Q_expected = np.array([0.019491, 0.041271, 0.043082, 0.008618, 0.005639, 0.017901, 0.013699, 0.041734, 0.042749, 0.03822745])
     ranking_expected = np.array([5, 7, 10, 2, 1, 4, 3, 8, 9, 6])
     alternatives_expected = [f"A{i}" for i in range(len(ngoctien2024application_matrix.matrix))]

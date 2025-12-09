@@ -1,11 +1,29 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
+# Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
+# Copyright (c) 2022, 2023, 2024 QuatroPe
+# All rights reserved.
+
+# =============================================================================
+# DOCS
+# =============================================================================
+
+"""test for skcriteria.agg.marcos"""
+
+# =============================================================================
+# IMPORTS
+# =============================================================================
+
 import numpy as np
-
 import pytest
-
 from skcriteria.agg._agg_base import RankResult
 from skcriteria.agg.marcos import MARCOS
 from skcriteria import testing, mkdm
 
+# =============================================================================
+# TEST CLASSES
+# =============================================================================
 
 @pytest.fixture
 def stevic2019sustainable_matrix():
@@ -34,14 +52,7 @@ def stevic2019sustainable_matrix():
         weights=weights
     )
 
-
 def test_MARCOS_stevic2019sustainable(stevic2019sustainable_matrix):
-    """
-    Data from:
-    Stević, Z., Pamučar, D., Puška, A., Chatterjee, P., Sustainable supplier selection in
-    healthcare industries using a new MCDM method: Measurement Alternatives and Ranking according to
-    COmpromise Solution (MARCOS), Computers & Industrial Engineering (2019)
-    """
     # Reference values
     f_K = np.array([0.524, 0.846, 0.704, 0.796, 0.843, 0.499, 0.722, 0.290])
     rank_expected = np.array([6, 1, 5, 3, 2, 7, 4, 8])

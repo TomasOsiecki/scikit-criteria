@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+# License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
+# Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
+# Copyright (c) 2022, 2023, 2024 QuatroPe
+# All rights reserved.
+
+# =============================================================================
+# DOCS
+# =============================================================================
+
+"""MARCOS (Measurement Alternatives and Ranking according to COmpromise Solution)."""
+
+
+# =============================================================================
+# IMPORTS
+# =============================================================================
 
 from ..utils import hidden
 
@@ -17,8 +32,8 @@ with hidden():
 def marcos(matrix, objectives, weights):
     """
     Execute MARCOS without any validation.
-    MARCOS (Measurement Alternatives and Ranking according to COmpromise Solution)
     """
+
     mask = objectives == Objective.MAX.value
     ideal = np.where(mask, matrix.max(axis=0), matrix.min(axis=0))
     anti_ideal = np.where(mask, matrix.min(axis=0), matrix.max(axis=0))
@@ -69,9 +84,7 @@ class MARCOS(SKCDecisionMakerABC):
 
     References
     ----------
-    Stević, Z., Pamučar, D., Puška, A., Chatterjee, P., Sustainable supplier selection in
-    healthcare industries using a new MCDM method: Measurement Alternatives and Ranking according to
-    COmpromise Solution (MARCOS), Computers & Industrial Engineering (2019)
+    :cite:p:`stevic2019sustainable`
 
     Parameters
     ----------
