@@ -86,18 +86,19 @@ class MARCOS(SKCDecisionMakerABC):
     >>> print(result.rank)
     """
 
-    _skcriteria_parameters = ["weights"]
-
-    def __init__(self, weights):
-        self.weights = np.asarray(weights)
+    _skcriteria_parameters = [] 
 
     @doc_inherit(SKCDecisionMakerABC._evaluate_data)
-    def _evaluate_data(self, matrix, objectives, **kwargs):
-        if len(self.weights) != matrix.shape[1]:
+    def _evaluate_data(self, matrix, objectives, weights, **kwargs):
+        if weights is None:
+            raise ValueError(
+                "weights parameter is needed."
+            )
+        if len(weights) != matrix.shape[1]:
             raise ValueError(
                 "Number of weights must match number of criteria."
             )
-        Si, K_minus, K_plus, f_K = marcos(matrix, objectives, self.weights)
+        Si, K_minus, K_plus, f_K = marcos(matrix, objectives, weights)
         ranking = rank.rank_values(f_K, reverse=True)
         return ranking, {
             "utility_scores": f_K,

@@ -4,11 +4,11 @@ import pytest
 
 from skcriteria.agg._agg_base import RankResult
 from skcriteria.agg.marcos import MARCOS
-from skcriteria.core import mkdm
+from skcriteria import testing, mkdm
 
 
 @pytest.fixture
-def sample_matrix():
+def stevic2019sustainable_matrix():
     """
     Data from:
     Stević, Z., Pamučar, D., Puška, A., Chatterjee, P., Sustainable supplier selection in
@@ -35,7 +35,7 @@ def sample_matrix():
     )
 
 
-def test_marcos_compare_with_reference(sample_matrix):
+def test_MARCOS_stevic2019sustainable(stevic2019sustainable_matrix):
     """
     Data from:
     Stević, Z., Pamučar, D., Puška, A., Chatterjee, P., Sustainable supplier selection in
@@ -44,7 +44,7 @@ def test_marcos_compare_with_reference(sample_matrix):
     """
     # Reference values
     f_K = np.array([0.524, 0.846, 0.704, 0.796, 0.843, 0.499, 0.722, 0.290])
-    rank = np.array([6, 1, 5, 3, 2, 7, 4, 8])
+    rank_expected = np.array([6, 1, 5, 3, 2, 7, 4, 8])
     Si = [
         # A1
         [0.072, 0.099, 0.036, 0.036, 0.019, 0.031, 0.049, 0.039, 0.028, 0.010, 0.019, 0.015, 0.013, 0.015, 0.014, 0.012, 0.010, 0.015, 0.011, 0.015, 0.006],
@@ -68,8 +68,8 @@ def test_marcos_compare_with_reference(sample_matrix):
 
     expected = RankResult(
         method="MARCOS",
-        alternatives=sample_matrix.alternatives,
-        values=rank,
+        alternatives=stevic2019sustainable_matrix.alternatives,
+        values=rank_expected,
         extra={
             "utility_scores": f_K,
             "Si": Si,
@@ -78,8 +78,8 @@ def test_marcos_compare_with_reference(sample_matrix):
         }
     )
 
-    ranker = MARCOS(sample_matrix.weights)
-    result = ranker.evaluate(sample_matrix)
+    marcos = MARCOS()
+    result = marcos.evaluate(stevic2019sustainable_matrix)
 
     assert result.values_equals(expected)
     assert result.method == expected.method
