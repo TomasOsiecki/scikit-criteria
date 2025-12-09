@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
 # DOCS
 # =============================================================================
 
-"""test for skcriteria.extend
-
-"""
+"""test for skcriteria.extend"""
 
 
 # =============================================================================
@@ -22,7 +20,8 @@ import numpy as np
 
 import pytest
 
-from skcriteria import extend as ext, pipeline
+from skcriteria import extend as ext
+from skcriteria.pipelines import mkpipe
 
 
 # =============================================================================
@@ -152,7 +151,7 @@ def test_mkagg_in_pipeline(decision_matrix):
         return values, {}
 
     # PIPE ====================================================================
-    pipe = pipeline.mkpipe(MyTransformer(), MyAgg())
+    pipe = mkpipe(MyTransformer(), MyAgg())
 
     assert repr(pipe) == (
         "<SKCPipeline "

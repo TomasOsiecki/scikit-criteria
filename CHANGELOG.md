@@ -1,6 +1,61 @@
-# Changelog of Scikit-Criteria
+# Whats new?
 
 <!-- BODY -->
+
+## Version 0.9
+
+### New Features
+
+*   **New MCDA Methods:** The library has been expanded with a dozen new aggregation methods, offering a wider range of tools for decision analysis:
+    *   **ARAS:** Additive Ratio Assessment.
+    *   **COCOSO:** Combined Compromise Solution.
+    *   **EDAS:** Evaluation based on Distance from Average Solution.
+    *   **ERVD:** Evaluation based on Reference Vector-Distance.
+    *   **MABAC:** Multi-Attributive Border Approximation area Comparison.
+    *   **OCRA:** Operational Competitiveness Rating Analysis.
+    *   **PROBID:** Probabilistic Omsi-based method for criterion weighting.
+    *   **RAM:** Range of Value Method.
+    *   **RIM:** Reference Ideal Method.
+    *   **SPOTIS:** Stable Preference Ordering Towards Ideal Solution.
+    *   **WASPAS:** Weighted Aggregated Sum Product Assessment.
+
+*   **New Criteria Inverters:** The
+    *   **MinMaxInverter:** A new inverter that normalizes all criteria to the [0,1] range and inverts minimization criteria to maximization. This is particularly useful for MCDA methods that require all criteria to have the same optimization direction and comparable scales.
+    *   **BenefitCostInverter:** A new inverter that uses ratios based on the criterion type. For benefit criteria, values are normalized by dividing by the maximum value of the criterion. For cost criteria, the minimum value of the criterion is divided by the value of the criterion
+
+*   **New Criteria Weighers:** New methods have been added to objectively calculate criteria weights:
+    *   **MEREC:** Method based on the Removal Effects of Criteria.
+    *   **Gini:** A weighter based on the Gini coefficient.
+
+*   **Rank Reversal Evaluators:** Two new classes have been introduced to analyze ranking stability:
+    *   `RankInvariantChecker`: Evaluates ranking consistency when one or more alternatives are removed (Test 1 of: Wang, X., & Triantaphyllou, E. (2008). Ranking irregularities when evaluating alternatives by using some ELECTRE methods. Omega, 36(1), 45-63. https://doi.org/10.1016/j.omega.2005.12.003).
+    *   `RankTransitivityChecker`: Analyzes ranking transitivity by comparing results with subsets of alternatives (Test 2 and 3 of: Wang, X., & Triantaphyllou, E. (2008). Ranking irregularities when evaluating alternatives by using some ELECTRE methods. Omega, 36(1), 45-63. https://doi.org/10.1016/j.omega.2005.12.003)
+
+*   **Combinatorial Pipelines:** The `CombinatorialPipeline` class has been added, a powerful tool that allows for the creation and exhaustive evaluation of all possible combinations of transformers and aggregation methods, facilitating multiple scalers and other kinds of analyses.
+
+*   **LaTeX Export:** The `DecisionMatrix` class now features a `to_latex()` method for easily exporting the decision matrix to a LaTeX table format.
+
+*   **Dominance Graph Cycle Detection:** A `has_loops()` method has been added to the `DecisionMatrix` class, which uses the `networkx` library to detect inconsistencies (cycles) in dominance relationships.
+
+### Improvements and Behavioral Changes
+
+*   **`PushNegatives` Fix:** A bug in the `PushNegatives` transformer has been resolved. It now correctly shifts all matrix values so that the minimum value is zero.
+*   **`ELECTRE2` Fix:** An error in the calculation of the "weak kernel" in `ELECTRE2` has been corrected, ensuring the results align with the method's literature.
+*   **Import Performance Improvement:** An on-demand import mechanism has been implemented, reducing the library's initial loading time.
+*   **Python 3.12 and 3.13 Support:** Compatibility has been added for the latest Python versions.
+*   **Dependency Updates:** The required versions of `NumPy` (to 2.0), `NetworkX` (to 3.2), and `scikit-learn` (to 1.6) have been updated.
+
+### API Changes (Breaking Changes)
+
+*   **New `replace()` Method:** A `replace()` method has been introduced in `DecisionMatrix` and all method classes (`SKCMethodABC`) as the recommended way to create copies with modified parameters. Using `copy(**kwargs)` for this purpose is now deprecated.
+*   **Module Restructuring:**
+    *   The `skcriteria.agg.similarity` module has been renamed to `skcriteria.agg.topsis`.
+    *   The `skcriteria.pipeline` module has been restructured into a package (`skcriteria.pipelines`), and the main class is now `skcriteria.pipelines.simple_pipeline.SimplePipeline`.
+*   **Name Changes for Consistency:**
+    *   The `Electre2` class has been renamed to `ELECTRE2`.
+    *   The `TieBreaker` class has been renamed to `FallbackTieBreaker`.
+
+---
 
 ## Version 0.8.7
 

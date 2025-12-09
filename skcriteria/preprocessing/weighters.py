@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
@@ -28,6 +28,8 @@ with hidden():
     import warnings
 
     import numpy as np
+
+    import pandas as pd
 
     import scipy.stats
 
@@ -325,20 +327,30 @@ def spearman_correlation(arr):
 
 def critic_weights(matrix, objectives, correlation="pearson", scale=True):
     """Execute the CRITIC method without any validation."""
+    # The paper:
+    #   Diakoulaki, D., Mavrotas, G., & Papayannakis, L. (1995).
+    #   Determining objective weights in multiple criteria problems:
+    #   The critic method. Computers & Operations Research, 22(7), 763-770.
+
+    # and equation 1 of the paper
     matrix = np.asarray(matrix, dtype=float)
+
+    # equation 2 an 3 of the paper
     matrix = (
         matrix_scale_by_cenit_distance(matrix, objectives=objectives)
         if scale
         else matrix
     )
 
-    dindex = np.std(matrix, axis=0)
-    import pandas as pd
+    # equation 4
+    corr = pd.DataFrame(matrix).corr(method=correlation).to_numpy(copy=True)
+    one_minus_corr = 1 - corr
 
-    corr_m1 = 1 - pd.DataFrame(matrix).corr(method=correlation).to_numpy(
-        copy=True
-    )
-    uweights = dindex * np.sum(corr_m1, axis=0)
+    # equation 5
+    dindex = np.std(matrix, axis=0)
+    uweights = dindex * np.sum(one_minus_corr, axis=0)
+
+    # equation 6
     weights = uweights / np.sum(uweights)
     return weights
 
@@ -425,3 +437,259 @@ class CRITIC(SKCWeighterABC):
 @doc_inherit(CRITIC, warn_class=False)
 class Critic(CRITIC):
     pass
+
+
+# =============================================================================
+# MEREC
+# =============================================================================
+
+
+def _merec_norm(matrix, objectives):
+    """
+    Simple linear normalization of the decision matrix using MEREC logic.
+
+    For benefit criteria, divide by the column maximum.
+    For cost criteria, divide the column minimum by each value.
+    """
+    where_max = np.equal(objectives, Objective.MAX.value)
+
+    maxs = matrix.max(axis=0)
+    mins = matrix.min(axis=0)
+
+    normalized_matrix = np.where(where_max, mins / matrix, matrix / maxs)
+
+    return normalized_matrix
+
+
+def merec_weights(matrix, objectives):
+    """Execute the MEREC method without any validation."""
+    matrix = np.asarray(matrix, dtype=float)
+    n_criteria = matrix.shape[1]
+
+    # Apply MEREC normalization based on each criterion's objective.
+    normalized_matrix = _merec_norm(matrix, objectives=objectives)
+
+    # overall performance of each alternative using all criteria.
+    performance = np.log(
+        1 + np.mean(np.abs(np.log(normalized_matrix)), axis=1, keepdims=True)
+    )
+
+    # performance of each alternative after removing each criterion.
+    log_matrix = np.abs(np.log(normalized_matrix))
+    exclusion_mask = np.ones((n_criteria, n_criteria)) - np.eye(
+        n_criteria
+    )  # mask to exclude one criterion at a time
+    performance_reduce = np.log(1 + (log_matrix @ exclusion_mask) / n_criteria)
+
+    # deviations between full and reduced performance.
+    deviations = np.sum(np.abs(performance_reduce - performance), axis=0)
+
+    # normalize the deviations to obtain criterion weights.
+    weights = deviations / np.sum(deviations)
+
+    return weights
+
+
+class MEREC(SKCWeighterABC):
+    """MEREC: Method based on the Removal Effects of Criteria.
+
+    The MEREC method computes objective weights for each criterion
+    based on its impact on the overall performance of alternatives
+    when removed. The idea is that the more a criterion affects the
+    total evaluation when excluded, the more important it is.
+
+    This implementation includes a simple linear normalization.
+
+    Reference
+    ---------
+    :cite:p:`keshavarz2021determination`
+    """
+
+    _skcriteria_parameters = []
+
+    @doc_inherit(SKCWeighterABC._weight_matrix)
+    def _weight_matrix(self, matrix, objectives, **kwargs):
+        return merec_weights(matrix, objectives=objectives)
+
+
+# =============================================================================
+# GINI
+# =============================================================================
+
+
+def gini_weights(matrix):
+    r"""
+    Calculates weights using the Gini coefficient.
+
+    Computes the weights for each criterion (column) of the input matrix by
+    calculating the Gini coefficient of each column, then normalizing those
+    values to sum to 1.
+
+    The columns are sorted to use the more efficient formula for the
+    Gini coefficient:
+
+    .. math::
+
+        G = \frac{1}{n} \left( n + 1 - 2 \cdot \frac{
+        \sum_{i=1}^n \left( \sum_{j=1}^i x_j \right)
+        }{
+        \sum_{i=1}^n x_i
+        } \right)
+    """
+    n = matrix.shape[0]
+    sorted_columns = np.sort(matrix, axis=0)
+    column_sums = np.sum(sorted_columns, axis=0)
+
+    # sum_of_cumulatives is the nested sum described in the formula above:
+    # sum from i = 1 to n of (sum from j = 1 to i of x_j)
+    cumulative_sums = np.cumsum(sorted_columns, axis=0)
+    sum_of_cumulatives = np.sum(cumulative_sums, axis=0)
+
+    gini = (n + 1 - 2 * sum_of_cumulatives / column_sums) / n
+
+    # weights are the normalized ginis of each column
+    return gini / np.sum(gini)
+
+
+class GiniWeighter(SKCWeighterABC):
+    """
+    Calculates the weights with the Gini coefficient.
+
+    The method aims at the determination of objective weights of relative
+    importance in MCDM problems. It uses the Gini coefficient of the data of
+    each criterion to assign the weights, giving a higher weight to a more
+    unequal distribution. It takes the decision matrix as a parameter.
+
+    References
+    ----------
+    :cite:p:`li2009new`
+    """
+
+    _skcriteria_parameters = []
+
+    @doc_inherit(SKCWeighterABC._weight_matrix)
+    def _weight_matrix(self, matrix, **kwargs):
+        return gini_weights(matrix)
+
+
+# =============================================================================
+# RANCOM
+# =============================================================================
+
+
+def rancom_weights(weights):
+    """RANCOM (RANking COMparison) weighting method.
+
+    The RANCOM method is designed to handle expert inaccuracies in
+    multi-criteria decision making by transforming initial weight
+    values through ranking comparison.
+    The method builds a Matrix of Ranking Comparison (MAC) where all weights
+    are compared pairwise, then calculates Summed Criteria Weights (SWC) to
+    derive final normalized weights.
+
+    The method operates under the following assumptions:
+
+    - The sum of input weights equals 1
+    - Lower weight values correspond to higher importance
+    - Ties between criteria are allowed
+
+    Algorithm Steps:
+
+    1. Convert weights to rankings (lower weight = higher rank/importance)
+    2. Build MAC (Matrix of Ranking Comparison): An nxn matrix where rankings
+       are compared pairwise with values:
+
+       - aij = 1 if rank_i < rank_j (criteria i is more important than j)
+       - aij = 0.5 if rank_i = rank_j (criteria i and j have equal importance)
+       - aij = 0 if rank_i > rank_j (criteria i is less important than j)
+
+    3. Calculate SWC (Summed Criteria Weights): Sum each row of the MAC matrix
+    4. Normalize final weights: wi = SWCi / sum(SWC)
+
+    Parameters
+    ----------
+    weights: array-like
+        Input weights. Lower values correspond to higher importance.
+
+    Notes
+    -----
+    - RANCOM is particularly useful when dealing with subjective weight
+      assignments from experts where small inaccuracies in weight
+      specification can significantly impact results.
+    - The method provides a systematic way to handle ranking inconsistencies.
+    - Unlike other weighting methods, RANCOM transforms existing weights rather
+      than deriving weights from the decision matrix.
+
+    Examples
+    --------
+    .. code-block:: pycon
+
+        >>> from skcriteria.preprocessing import rancom_weights
+        >>> weights = [0.4, 0.2, 0.25, 0.05]
+        >>> rancom_weights(weights)
+        array([0.4375, 0.1875, 0.3125, 0.0625])
+    """
+    # Normalize weights if necessary
+    weights_sum = np.sum(weights)
+    if weights_sum != 1:
+        weights /= weights_sum
+
+    # Convert weights to rankings (lower weight = higher rank/importance)
+    # Reverse weights so that lower weight values get higher ranks
+    reversed_weights = -weights
+    rankings = scipy.stats.rankdata(reversed_weights, method="dense")
+
+    # Build MAC matrix based on rankings
+    rank_i = rankings.reshape(-1, 1)
+    rank_j = rankings.reshape(1, -1)
+    rancom_matrix = np.where(
+        rank_i < rank_j, 1, np.where(rank_i == rank_j, 0.5, 0)
+    )
+
+    summed_criteria_weights = np.sum(rancom_matrix, axis=1)
+    total_swc = np.sum(summed_criteria_weights)
+    result = summed_criteria_weights / total_swc
+
+    return result
+
+
+class RANCOM(SKCWeighterABC):
+    """
+    Ranking Comparison (RANCOM) method.
+
+    The RANCOM method is designed to handle expert inaccuracies in
+    multi-criteria decision making by transforming initial weight values
+    through ranking comparison.
+
+    The method builds a Matrix of Ranking Comparison (MAC) where all weights
+    are compared pairwise, then calculates Summed Criteria Weights (SWC) to
+    derive final normalized weights.
+
+    RANCOM uses predefined weights provided through the weighting process
+    and does not require additional configuration parameters.
+
+    Warnings
+    --------
+    UserWarning
+        If there are fewer than five weights. The original paper suggests
+        that RANCOM works better with five or more criteria, though nothing
+        prevents its use with four or fewer criteria.
+
+    References
+    ----------
+    :cite:p:`WIECKOWSKI2023106114`
+    """
+
+    _skcriteria_parameters = []
+
+    @doc_inherit(SKCWeighterABC._weight_matrix)
+    def _weight_matrix(self, matrix, objectives, weights):
+        if len(weights) < 5:
+            warnings.warn(
+                "RANCOM method proves to be a more suitable solution to "
+                "handle the expert inaccuracies for the problems with 5 or "
+                "more criteria. Despite this, nothing prevents its use with "
+                "four or fewer."
+            )
+
+        return rancom_weights(weights)

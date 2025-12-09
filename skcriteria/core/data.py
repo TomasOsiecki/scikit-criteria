@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
@@ -20,8 +20,8 @@ the alternative matrix, weights and objectives (MIN, MAX) of the criteria.
 # IMPORTS
 # =============================================================================
 
-
 import functools
+import io
 from collections import abc
 
 import methodtools
@@ -37,7 +37,7 @@ from .plot import DecisionMatrixPlotter
 from .stats import DecisionMatrixStatsAccessor
 from ..utils import (
     DiffEqualityMixin,
-    deprecated,
+    deprecate,
     df_temporal_header,
     diff,
     doc_inherit,
@@ -466,22 +466,94 @@ class DecisionMatrix(DiffEqualityMixin):
 
     # UTILITIES ===============================================================
 
-    def copy(self, **kwargs):
-        """Return a deep copy of the current DecisionMatrix.
+    def constant_criteria(self, std_kws=None, isclose_kws=None):
+        """Identifies criteria with constant values based on std deviation.
 
-        This method is also useful for manually modifying the values of the
-        DecisionMatrix object.
+        This method calculates the standard deviation of each column and
+        determines which are effectively constant (standard deviation ~ 0)
+        using numerical comparison with tolerance.
 
         Parameters
         ----------
-        kwargs :
-            The same parameters supported by ``from_mcda_data()``. The values
-            provided replace the existing ones in the object to be copied.
+        std_kws : dict, optional
+            Additional keyword arguments for pandas.DataFrame.std().
+            Default: {}
+
+        isclose_kws : dict, optional
+            Additional keyword arguments for numpy.isclose().
+            Default: {}
 
         Returns
         -------
-        :py:class:`DecisionMatrix`
-            A new decision matrix.
+        pandas.Series
+            Boolean series where True indicates the column is constant.
+            Index corresponds to DataFrame column names.
+            Series name is 'ConstantsCriteria'.
+
+        """
+        std_kws = {} if std_kws is None else std_kws
+        isclose_kws = {} if isclose_kws is None else isclose_kws
+
+        std = self._data_df.std(axis=0, **std_kws)
+        is_constants_enough = np.isclose(std, 0.0, **isclose_kws)
+
+        constants = pd.Series(is_constants_enough, index=self._data_df.columns)
+        constants.name = "constant_criteria"
+
+        return constants
+
+    def copy(self, **kwargs):
+        """Create a copy of the current DecisionMatrix instance.
+
+        .. deprecated:: 0.9
+            Using kwargs with copy() is deprecated. Use
+            DecisionMatrix.replace() instead.
+
+        Parameters
+        ----------
+        **kwargs : dict, optional (deprecated)
+            Keyword arguments to modify attributes in the copied instance.
+            This parameter is deprecated.
+
+        Returns
+        -------
+        DecisionMatrix
+            A new DecisionMatrix instance with the same data as the original.
+
+        See Also
+        --------
+        replace : Preferred method to create a copy with modifications.
+
+        """
+        if kwargs:
+            cls_name = type(self).__name__
+            deprecate.warn(
+                "Passing kwargs to 'copy()' is deprecated, plese use "
+                f"'{cls_name}.replace()' instead."
+            )
+        return self.replace(**kwargs)
+
+    def replace(self, **kwargs):
+        """Create a new DecisionMatrix instance with updated attributes.
+
+        Creates a copy of the current DecisionMatrix and updates it with the
+        provided keyword arguments.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Keyword arguments specifying attributes to modify in the new
+            instance. Any valid DecisionMatrix attribute can be updated.
+
+        Returns
+        -------
+        DecisionMatrix
+            A new DecisionMatrix instance with the updated attributes.
+
+        Examples
+        --------
+        >>> dm = DecisionMatrix(...)
+        >>> new_dm = dm.replace(weights=[0.3, 0.7])
 
         """
         dmdict = self.to_dict()
@@ -539,7 +611,74 @@ class DecisionMatrix(DiffEqualityMixin):
             "criteria": np.array(self.criteria, copy=True),
         }
 
-    @deprecated(
+    def to_latex(self, bold_columns=True, **kwargs):
+        """Generate LaTeX table.
+
+        Parameters
+        ----------
+        bold_columns : bool, default=True
+            If True, bold the columns.
+
+        Same parameters as ``pandas.DataFrame.to_latex()``.
+
+        Returns
+        -------
+        str
+            LaTeX table.
+
+        Notes
+        -----
+        By default, this method uses ``bold_rows=True``.
+
+        """
+        # set default parameter for pandas.DataFrame.to_latex()
+        kwargs.setdefault("bold_rows", True)
+
+        # create a DataFrame version of the DecisionMatrix
+        df = self.to_dataframe()
+
+        # generate the column names
+        columns = (
+            [rf"\textbf{{{col}}}" for col in df.columns]
+            if bold_columns
+            else list(df.columns)
+        )
+
+        # change the column names of the DataFrame
+        # this is a context manager, so it will be reverted automatically
+        with df_temporal_header(df, columns) as df:
+            # generate the latex
+            original_latex = df.to_latex(**kwargs)
+
+        # split the latex in lines
+        latex_lines = original_latex.splitlines()
+
+        # generate the string to search the weights line
+        # this is used to add a line break before the weights row
+        weights_line_starts_with = (
+            r"\textbf{weights} & " if kwargs["bold_rows"] else "weights & "
+        )
+
+        # search the line number of the weights
+        weights_line_number = None
+        for lineno, line in enumerate(latex_lines):
+            if line.startswith(weights_line_starts_with):
+                weights_line_number = lineno
+                break
+
+        # add a line break after the weights row
+        # TODO: this might only work if the pandas stylers are
+        #       configured with the default settings
+        if weights_line_number:  # pragma: no cover
+            latex_lines.insert(weights_line_number + 1, r"\midrule")
+
+        # join the lines again
+        latex = "\n".join(latex_lines)
+
+        # return the final latex
+        return latex
+
+    @deprecate.deprecated(
         reason=(
             "Use ``DecisionMatrix.stats()``, "
             "``DecisionMatrix.stats('describe)`` or "
@@ -565,6 +704,38 @@ class DecisionMatrix(DiffEqualityMixin):
 
         """
         return self._data_df.describe(**kwargs)
+
+    # IO ======================================================================
+
+    def to_dmsy(self, filepath_or_buffer=None):
+        """Save a DecisionMatrix to a DMSY format file or buffer.
+
+        Parameters
+        ----------
+        filepath_or_buffer : str or file-like object or None
+            Path where to save the DMSY file or a file-like object to write to.
+            if None, return the DMSY data as a string
+
+        Returns
+        -------
+        str
+            DMSY data as a string if filepath_or_buffer is None else None
+
+        Examples
+        --------
+        >>> import skcriteria as skc
+        >>> dm = skc.mkdm([[1, 2], [3, 4]], [max, min])
+        >>> skc.io.to_dmsy(dm, "output.dmsy")
+
+        """
+        from skcriteria.io.dmsy import to_dmsy
+
+        return_str = filepath_or_buffer is None
+        filepath_or_buffer = (
+            io.StringIO() if return_str else filepath_or_buffer
+        )
+        to_dmsy(dm=self, filepath_or_buffer=filepath_or_buffer)
+        return filepath_or_buffer.getvalue() if return_str else None
 
     # CMP =====================================================================
 

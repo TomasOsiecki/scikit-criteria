@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
@@ -50,8 +50,8 @@ class SKCTransformerABC(SKCMethodABC):
         """
         raise NotImplementedError()
 
-    def transform(self, dm):
-        """Perform transformation on `dm`.
+    def _transform_dm(self, dm):
+        """Internal method that contains the core transformation logic.
 
         Parameters
         ----------
@@ -71,6 +71,22 @@ class SKCTransformerABC(SKCMethodABC):
         transformed_dm = DecisionMatrix.from_mcda_data(**transformed_data)
 
         return transformed_dm
+
+    def transform(self, dm):
+        """Perform transformation on `dm`.
+
+        Parameters
+        ----------
+        dm: :py:class:`skcriteria.data.DecisionMatrix`
+            The decision matrix to transform.
+
+        Returns
+        -------
+        :py:class:`skcriteria.data.DecisionMatrix`
+            Transformed decision matrix.
+
+        """
+        return self._transform_dm(dm)
 
 
 # =============================================================================

@@ -2,16 +2,14 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
 # DOCS
 # =============================================================================
 
-"""test for skcriteria.agg.electre.
-
-"""
+"""test for skcriteria.agg.electre."""
 
 
 # =============================================================================
@@ -26,8 +24,10 @@ import skcriteria
 from skcriteria.agg.electre import (
     ELECTRE1,
     ELECTRE2,
+    _electre2_ranker,
     concordance,
     discordance,
+    electre2,
     weights_outrank,
 )
 from skcriteria.preprocessing.scalers import SumScaler, scale_by_sum
@@ -234,6 +234,39 @@ def test_weight_outrank():
     np.testing.assert_array_equal(results, expected)
 
 
+def test_electre_2_ranker_empty_kernel():
+    outrank_s = np.array(
+        [
+            [False, True, False],  # Alternative 0 outranks Alternative 1
+            [False, False, True],  # Alternative 1 outranks Alternative 2
+            [True, False, False],  # Alternative 2 outranks Alternative 0
+        ]
+    )
+
+    # Weak outranking matrix - everyone also weakly outranks someone else
+    outrank_w = np.array(
+        [
+            [
+                False,
+                False,
+                True,
+            ],  # Alternative 0 weakly outranks Alternative 2
+            [
+                True,
+                False,
+                False,
+            ],  # Alternative 1 weakly outranks Alternative 0
+            [
+                False,
+                True,
+                False,
+            ],  # Alternative 2 weakly outranks Alternative 1
+        ]
+    )
+
+    _electre2_ranker(3, outrank_s, outrank_w, invert_ranking=False)
+
+
 def test_ELECTRE2_cebrian2009localizacion():
     """
     Data From:
@@ -264,8 +297,39 @@ def test_ELECTRE2_cebrian2009localizacion():
     kselector = ELECTRE2()
     result = kselector.evaluate(dm)
 
-    assert np.all(result.rank_ == [3, 2, 1, 3, 1, 3])
-    np.testing.assert_allclose(result.e_.score, [2.0, 1.5, 1.0, 2.0, 1.0, 2.0])
+    assert np.all(result.rank_ == [6, 3, 2, 5, 1, 4])
+    np.testing.assert_allclose(result.e_.score, [5.0, 2.5, 2.0, 4.0, 1.0, 3.0])
+
+
+def test_ELECTRE2_wang2006():
+    """
+    Data From:
+        Xiaoting Wang, Evangelos Triantaphyllou,
+            Ranking irregularities when evaluating alternatives by using
+            some ELECTRE methods,
+        Omega,
+        Volume 36, Issue 1,
+        2008,
+
+    """
+    dm = skcriteria.mkdm(
+        matrix=[
+            [1, 2, 1, 5, 2, 2, 4],
+            [3, 5, 3, 5, 3, 3, 3],
+            [3, 5, 3, 5, 3, 2, 2],
+            [1, 2, 2, 5, 1, 1, 1],
+            [1, 1, 3, 5, 4, 1, 5],
+        ],
+        alternatives=["A1", "A2", "A3", "A4", "A5"],
+        objectives=[max, max, max, max, max, max, max],
+        weights=[0.0780, 0.1180, 0.1570, 0.3140, 0.2350, 0.0390, 0.0590],
+    )
+
+    kselector = ELECTRE2()
+    result = kselector.evaluate(dm)
+
+    assert np.all(result.rank_ == [4, 1, 3, 5, 2])
+    np.testing.assert_allclose(result.e_.score, [3.0, 1.0, 2.0, 4.0, 1.5])
 
 
 @pytest.mark.parametrize(
@@ -280,3 +344,41 @@ def test_ELECTRE2_invalid_ps(p0, p1, p2):
 def test_ELECTRE2_invalid_qs(q0, q1):
     with pytest.raises(ValueError):
         ELECTRE2(q0=q0, q1=q1)
+
+
+def test_electre2_deprecation():
+    matrix = np.array(
+        [
+            [6, 5, 28, 5, 5],
+            [4, 2, 25, 10, 9],
+            [5, 7, 35, 9, 6],
+            [6, 1, 27, 6, 7],
+            [6, 8, 30, 7, 9],
+            [5, 6, 26, 4, 8],
+        ],
+        dtype=float,
+    )
+    objectives = np.array([1, 1, -1, 1, 1])
+    weights = np.array([0.25, 0.25, 0.1, 0.2, 0.2])
+
+    with pytest.warns(DeprecationWarning):
+        electre2(matrix, objectives, weights)
+
+
+def test_weights_outrank_deprecation():
+    matrix = np.array(
+        [
+            [6, 5, 28, 5, 5],
+            [4, 2, 25, 10, 9],
+            [5, 7, 35, 9, 6],
+            [6, 1, 27, 6, 7],
+            [6, 8, 30, 7, 9],
+            [5, 6, 26, 4, 8],
+        ],
+        dtype=float,
+    )
+    objectives = np.array([1, 1, -1, 1, 1])
+    weights = np.array([0.25, 0.25, 0.1, 0.2, 0.2])
+
+    with pytest.warns(DeprecationWarning):
+        weights_outrank(matrix, objectives, weights)

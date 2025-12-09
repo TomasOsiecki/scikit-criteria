@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
@@ -22,6 +22,7 @@ from ._agg_base import (
     ResultABC,
     SKCDecisionMakerABC,
 )
+from .mabac import MABAC
 
 # =============================================================================
 # ALL
@@ -32,4 +33,5 @@ __all__ = [
     "RankResult",
     "ResultABC",
     "SKCDecisionMakerABC",
+    "MABAC",
 ]

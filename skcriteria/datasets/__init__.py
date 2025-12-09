@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
@@ -12,20 +12,16 @@
 """The :mod:`skcriteria.datasets` module includes utilities to load \
 datasets."""
 
-
 # =============================================================================
 # IMPORRTS
 # =============================================================================
 from ..utils import hidden
 
 with hidden():
-    import json
     import os
     import pathlib
 
-    from skcriteria.core.data import mkdm
-
-    from .. import core
+    from .. import core, io
 
 # =============================================================================
 # CONSTANTS
@@ -141,8 +137,8 @@ def load_van2021evaluation(windows_size=7):
 
     """
     paths = {
-        7: _PATH / "van2021evaluation" / "windows_size_7.json",
-        15: _PATH / "van2021evaluation" / "windows_size_15.json",
+        7: _PATH / "van2021evaluation" / "windows_size_7.dmsy",
+        15: _PATH / "van2021evaluation" / "windows_size_15.dmsy",
     }
 
     path = paths.get(windows_size)
@@ -151,7 +147,6 @@ def load_van2021evaluation(windows_size=7):
             f"Windows size must be '7' or '15'. Found {windows_size!r}"
         )
 
-    with open(path) as fp:
-        data = json.load(fp)
+    dm = io.read_dmsy(path)
 
-    return mkdm(**data)
+    return dm
