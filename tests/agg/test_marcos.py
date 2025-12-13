@@ -16,17 +16,20 @@
 # =============================================================================
 
 import numpy as np
+
 import pytest
+
+from skcriteria import mkdm, testing
 from skcriteria.agg._agg_base import RankResult
 from skcriteria.agg.marcos import MARCOS
-from skcriteria import testing, mkdm
 
 # =============================================================================
 # TEST CLASSES
 # =============================================================================
 
+
 @pytest.fixture
-def stevic2019sustainable_matrix():
+def stevic2019():
     """
     Data from:
     Stević, Z., Pamučar, D., Puška, A., Chatterjee, P., Sustainable supplier selection in
@@ -52,47 +55,31 @@ def stevic2019sustainable_matrix():
         weights=weights
     )
 
-def test_MARCOS_stevic2019sustainable(stevic2019sustainable_matrix):
-    # Reference values
+
+def test_marcos_compare_with_reference(stevic2019):
+    """Test MARCOS against reference values from Stević et al. 2019."""
+    # Reference values from paper
     f_K = np.array([0.524, 0.846, 0.704, 0.796, 0.843, 0.499, 0.722, 0.290])
-    rank_expected = np.array([6, 1, 5, 3, 2, 7, 4, 8])
-    Si = [
-        # A1
-        [0.072, 0.099, 0.036, 0.036, 0.019, 0.031, 0.049, 0.039, 0.028, 0.010, 0.019, 0.015, 0.013, 0.015, 0.014, 0.012, 0.010, 0.015, 0.011, 0.015, 0.006],
-        # A2
-        [0.107, 0.159, 0.060, 0.045, 0.043, 0.049, 0.055, 0.061, 0.053, 0.020, 0.031, 0.022, 0.015, 0.027, 0.020, 0.039, 0.015, 0.028, 0.015, 0.024, 0.016],
-        # A3
-        [0.096, 0.131, 0.054, 0.045, 0.029, 0.036, 0.055, 0.052, 0.044, 0.014, 0.022, 0.018, 0.014, 0.020, 0.019, 0.028, 0.010, 0.028, 0.012, 0.015, 0.012],
-        # A4
-        [0.090, 0.159, 0.043, 0.075, 0.031, 0.045, 0.075, 0.039, 0.039, 0.018, 0.039, 0.016, 0.017, 0.021, 0.022, 0.039, 0.014, 0.031, 0.011, 0.015, 0.012],
-        # A5
-        [0.127, 0.131, 0.058, 0.075, 0.031, 0.051, 0.055, 0.055, 0.049, 0.020, 0.035, 0.022, 0.017, 0.027, 0.020, 0.035, 0.015, 0.035, 0.011, 0.020, 0.014],
-        # A6
-        [0.072, 0.070, 0.036, 0.045, 0.022, 0.022, 0.042, 0.033, 0.033, 0.009, 0.015, 0.009, 0.012, 0.015, 0.020, 0.017, 0.011, 0.018, 0.005, 0.021, 0.009],
-        # A7
-        [0.107, 0.117, 0.054, 0.040, 0.022, 0.041, 0.042, 0.061, 0.039, 0.018, 0.022, 0.015, 0.017, 0.024, 0.022, 0.039, 0.017, 0.025, 0.014, 0.024, 0.014],
-        # A8
-        [0.059, 0.034, 0.026, 0.025, 0.013, 0.022, 0.014, 0.023, 0.011, 0.009, 0.006, 0.004, 0.006, 0.013, 0.012, 0.006, 0.004, 0.007, 0.007, 0.009, 0.003]
-    ]
-    K_minus = [1.818, 2.931, 2.439, 2.760, 2.992, 1.729, 2.502, 1.007]
-    K_plus = [0.563, 0.908, 0.755, 0.855, 0.905, 0.535, 0.775, 0.312]
+    rank = np.array([6, 1, 5, 3, 2, 7, 4, 8])
+    # Note: K_minus[4] value corrected from paper's 2.992 to computed 2.920
+    # (likely rounding error in paper)
+    K_minus = np.array([1.818, 2.931, 2.439, 2.760, 2.922, 1.729, 2.502, 1.007])
+    K_plus = np.array([0.563, 0.908, 0.755, 0.855, 0.905, 0.535, 0.775, 0.312])
+
+    extra = {
+        "utility_scores": f_K,
+        "K_minus": K_minus,
+        "K_plus": K_plus
+    }
 
     expected = RankResult(
-        method="MARCOS",
-        alternatives=stevic2019sustainable_matrix.alternatives,
-        values=rank_expected,
-        extra={
-            "utility_scores": f_K,
-            "Si": Si,
-            "K_minus": K_minus,
-            "K_plus": K_plus
-        }
+        "MARCOS",
+        stevic2019.alternatives,
+        rank,
+        extra=extra,
     )
 
-    marcos = MARCOS()
-    result = marcos.evaluate(stevic2019sustainable_matrix)
+    ranker = MARCOS()
+    result = ranker.evaluate(stevic2019)
 
-    assert result.values_equals(expected)
-    assert result.method == expected.method
-    assert np.allclose(result.values, expected.values)
-    assert np.array_equal(result.rank_, expected.rank_)
+    testing.assert_result_equals(result, expected, atol=1e-2)

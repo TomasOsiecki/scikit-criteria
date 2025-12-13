@@ -65,13 +65,11 @@ def marcos(matrix, objectives, weights):
     # Step 6: Final utility function
     f_K_plus = K_minus / (K_plus + K_minus)
     f_K_minus = K_plus / (K_plus + K_minus)
-    f_K = (
-        (K_plus + K_minus)
-        / ((1 - f_K_plus) * (1 - f_K_minus))
-        * (1 / (1 + f_K_plus / f_K_minus))
+    f_K = (K_plus + K_minus) / (
+        1 + (1 - f_K_plus) / f_K_plus + (1 - f_K_minus) / f_K_minus
     )
 
-    return Si, K_minus, K_plus, f_K
+    return K_minus, K_plus, f_K
 
 
 class MARCOS(SKCDecisionMakerABC):
@@ -99,23 +97,20 @@ class MARCOS(SKCDecisionMakerABC):
     >>> print(result.rank)
     """
 
-    _skcriteria_parameters = [] 
+    _skcriteria_parameters = []
 
     @doc_inherit(SKCDecisionMakerABC._evaluate_data)
     def _evaluate_data(self, matrix, objectives, weights, **kwargs):
         if weights is None:
-            raise ValueError(
-                "weights parameter is needed."
-            )
+            raise ValueError("weights parameter is needed.")
         if len(weights) != matrix.shape[1]:
             raise ValueError(
                 "Number of weights must match number of criteria."
             )
-        Si, K_minus, K_plus, f_K = marcos(matrix, objectives, weights)
+        K_minus, K_plus, f_K = marcos(matrix, objectives, weights)
         ranking = rank.rank_values(f_K, reverse=True)
         return ranking, {
             "utility_scores": f_K,
-            "Si": Si,
             "K_minus": K_minus,
             "K_plus": K_plus,
         }
