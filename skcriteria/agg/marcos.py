@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 # License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))
 # Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia
-# Copyright (c) 2022, 2023, 2024 QuatroPe
+# Copyright (c) 2022-2025 QuatroPe
 # All rights reserved.
 
 # =============================================================================
 # DOCS
 # =============================================================================
 
-"""MARCOS (Measurement Alternatives and Ranking according to COmpromise Solution)."""
-
+"""MARCOS (Measurement Alternatives & Ranking according to COmpromise \
+Solution)."""
 
 # =============================================================================
 # IMPORTS
@@ -30,10 +30,7 @@ with hidden():
 
 
 def marcos(matrix, objectives, weights):
-    """
-    Execute MARCOS without any validation.
-    """
-
+    """Execute MARCOS without any validation."""
     mask = objectives == Objective.MAX.value
     ideal = np.where(mask, matrix.max(axis=0), matrix.min(axis=0))
     anti_ideal = np.where(mask, matrix.min(axis=0), matrix.max(axis=0))
@@ -69,16 +66,20 @@ def marcos(matrix, objectives, weights):
         1 + (1 - f_K_plus) / f_K_plus + (1 - f_K_minus) / f_K_minus
     )
 
+    print(f_K)
+
     return K_minus, K_plus, f_K
 
 
 class MARCOS(SKCDecisionMakerABC):
     """
-    MARCOS (Measurement Alternatives and Ranking according to COmpromise Solution).
+    MARCOS (Measurement Alternatives and Ranking according to COmpromise \
+    Solution).
 
-    This method evaluates and ranks alternatives based on their compromise distance
-    to the ideal and anti-ideal solutions. It is suitable for multi-criteria decision
-    analysis (MCDA) problems with both maximizing and minimizing criteria.
+    This method evaluates and ranks alternatives based on their compromise
+    distance to the ideal and anti-ideal solutions. It is suitable for
+    multi-criteria decision analysis (MCDA) problems with both maximizing and
+    minimizing criteria.
 
     References
     ----------
