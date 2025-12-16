@@ -244,3 +244,34 @@ def test_MAIRCA_zero_P_ai(ljubomir2016combination_matrix):
     assert len(result.e_["values"]) == len(
         ljubomir2016combination_matrix.matrix
     )
+
+
+def test_MAIRCA_zero_in_matrix():
+    dm = mkdm([[0]], [max])
+    dec = MAIRCA()
+    with pytest.raises(ValueError):
+        dec.evaluate(dm)
+
+
+def test_MAIRCA_equal_values_in_criterion():
+    dm = mkdm(
+        matrix=[
+            [2.0, 1.0],
+            [2.0, 3.0],
+        ],
+        objectives=[max, max],
+        weights=[0.6, 0.4],
+    )
+    mairca = MAIRCA()
+    Q_i = np.array([0.2, 0])
+
+    expected = RankResult(
+        "MAIRCA",
+        alternatives=["A0", "A1"],
+        values=[2, 1],
+        extra={"values": Q_i},
+    )
+
+    result = mairca.evaluate(dm)
+
+    testing.assert_result_equals(result, expected, atol=1e-4)

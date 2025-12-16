@@ -102,12 +102,6 @@ class MARCOS(SKCDecisionMakerABC):
 
     @doc_inherit(SKCDecisionMakerABC._evaluate_data)
     def _evaluate_data(self, matrix, objectives, weights, **kwargs):
-        if weights is None:
-            raise ValueError("weights parameter is needed.")
-        if len(weights) != matrix.shape[1]:
-            raise ValueError(
-                "Number of weights must match number of criteria."
-            )
         K_minus, K_plus, f_K = marcos(matrix, objectives, weights)
         ranking = rank.rank_values(f_K, reverse=True)
         return ranking, {
